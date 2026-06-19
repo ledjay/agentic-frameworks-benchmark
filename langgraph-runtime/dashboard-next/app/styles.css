@@ -1,0 +1,60 @@
+:root {
+  --bg: #090b10;
+  --panel: #10141d;
+  --panel-soft: #151b27;
+  --line: #263043;
+  --text: #f4f7fb;
+  --muted: #9ba7b7;
+  --accent: #8ec5ff;
+  --good: #78e3a5;
+  --bad: #ff8b85;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(circle at top left, #172033, var(--bg) 45%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+main { max-width: 1220px; margin: 0 auto; padding: 32px; }
+.hero, .card { border: 1px solid var(--line); border-radius: 18px; background: rgba(16, 20, 29, .94); box-shadow: 0 20px 80px rgba(0,0,0,.25); }
+.hero { padding: 28px; margin-bottom: 18px; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { font-size: clamp(2rem, 5vw, 4rem); letter-spacing: -.05em; margin-bottom: 10px; }
+h2 { margin-bottom: 8px; }
+.kicker, .miniLabel { color: var(--accent); text-transform: uppercase; font-weight: 800; letter-spacing: .12em; font-size: .75rem; }
+.note, .empty, small { color: var(--muted); }
+code { color: #c7e5ff; background: #0b0f17; border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+.statusGrid, .metricsGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.statusGrid span, .metricsGrid span { padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-soft); color: var(--muted); }
+.statusGrid strong, .metricsGrid strong { color: var(--text); }
+.statusGrid strong[data-ok="true"] { color: var(--good); }
+.playground { display: grid; gap: 14px; }
+.panelHeader { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+.panelHeader.compact { align-items: center; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+button { border: 1px solid var(--line); border-radius: 999px; padding: 9px 13px; background: var(--panel-soft); color: var(--text); font-weight: 800; cursor: pointer; }
+button[data-active="true"] { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+.scenarioRail { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.scenarioRail button { border-radius: 14px; text-align: left; display: grid; gap: 4px; }
+.scenarioRail span { color: var(--muted); font-weight: 500; }
+.conversationGrid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 14px; align-items: start; }
+.card { padding: 16px; }
+.transcript { max-height: 660px; overflow: auto; }
+.transcript ol, .assessmentList { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+.transcript li, .assessmentList li { padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-soft); }
+.transcript li[data-role="assistant"] { border-left: 3px solid var(--accent); }
+.transcript li span { color: var(--muted); font-weight: 800; font-size: .75rem; text-transform: uppercase; }
+.transcript li p { margin: 4px 0 0; }
+.mainColumn { display: grid; gap: 12px; }
+.composer { display: grid; gap: 12px; }
+label { display: grid; gap: 8px; color: var(--muted); font-weight: 800; }
+textarea { width: 100%; min-height: 110px; resize: vertical; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #090b0f; color: var(--text); }
+.resultDeck { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px; }
+.answer p { font-size: 1.25rem; line-height: 1.35; }
+.score { display: grid; place-items: center; text-align: center; }
+.score > strong { font-size: 2.2rem; color: var(--good); }
+.assessmentList li { display: grid; gap: 4px; color: var(--muted); }
+.assessmentList li[data-ok="true"] strong { color: var(--good); }
+.assessmentList li[data-ok="false"] strong { color: var(--bad); }
+.metricsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.debugGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+pre { max-height: 280px; overflow: auto; white-space: pre-wrap; margin: 6px 0 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #07090d; color: #dce8f8; font-size: .78rem; }
+.errorBox { border-color: rgba(255,139,133,.5); color: #ffd8d5; }
+@media (max-width: 900px) { main { padding: 18px; } .conversationGrid, .resultDeck, .debugGrid, .scenarioRail, .statusGrid, .metricsGrid { grid-template-columns: 1fr; } .panelHeader { display: grid; } }

@@ -1,0 +1,77 @@
+# macOS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Letta / local agent state
+.letta/
+
+# Environment files / secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+!.env.dist
+!**/.env.dist
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node / Next
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+.vercel/
+.netlify/
+next-env.d.ts
+
+# Mastra generated state
+.mastra/
+mastra-runtime/.mastra/
+mastra-runtime/data/*.db
+mastra-runtime/data/*.sqlite
+mastra-runtime/data/*.sqlite3
+mastra-runtime/data/*.db-*
+
+# MLflow / Phoenix local state
+mlflow-genai/mlflow.db
+mlflow-genai/artifacts/
+mlruns/
+artifacts/
+
+# Local databases / binary runtime artifacts
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.pkl
+
+# Docker / temporary runtime output
+.tmp/
+tmp/
+.cache/

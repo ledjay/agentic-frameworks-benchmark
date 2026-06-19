@@ -1,0 +1,48 @@
+{
+  "name": "ansu-mastra-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "POC AnSu Mastra runtime + Next dashboard + Studio/evals/observability",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n mastra,next -c magenta,cyan \"npm:dev:mastra\" \"npm:dev:next\"",
+    "dev:mastra": "MASTRA_STORAGE_URL=\"file:$PWD/data/mastra.db\" mastra dev",
+    "dev:next": "next dev --port 3009",
+    "build": "mastra build && next build",
+    "build:mastra": "MASTRA_STORAGE_URL=\"file:$PWD/data/mastra.db\" mastra build",
+    "build:next": "next build",
+    "start": "MASTRA_STORAGE_URL=\"file:$PWD/data/mastra.db\" mastra start",
+    "studio": "mastra studio --port 4111",
+    "seed": "node --experimental-strip-types scripts/seed.mjs",
+    "test:scorer": "node --experimental-strip-types scripts/test-scorer.mjs",
+    "start:mastra": "MASTRA_STORAGE_URL=\"${MASTRA_STORAGE_URL:-file:$PWD/data/mastra.db}\" mastra start",
+    "start:next": "HOSTNAME=0.0.0.0 PORT=3009 node .next/standalone/server.js",
+    "start:docker": "concurrently -n mastra,next -c magenta,cyan \"npm:start:mastra\" \"npm:start:next\"",
+    "studio:docker": "mastra studio --port 4112 --server-host mastra-runtime --server-port 4111 --server-protocol http --server-api-prefix /api"
+  },
+  "dependencies": {
+    "@ai-sdk/mistral": "^2.0.30",
+    "@ai-sdk/openai-compatible": "^2.0.51",
+    "@mastra/core": "^1.42.0",
+    "@mastra/libsql": "^1.13.0",
+    "@mastra/memory": "^1.20.3",
+    "@mastra/observability": "^1.14.1",
+    "concurrently": "^9.2.1",
+    "next": "^16.2.9",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "wait-on": "^9.0.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "mastra": "^1.13.0",
+    "typescript": "^6.0.3"
+  }
+}

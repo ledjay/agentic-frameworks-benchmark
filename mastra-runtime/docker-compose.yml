@@ -1,0 +1,83 @@
+services:
+  mastra-runtime:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      MASTRA_BASE_URL: http://localhost:4111
+      NEXT_BASE_URL: http://localhost:3009
+      MASTRA_STORAGE_URL: file:/app/data/mastra.db
+      MASTRA_PROVIDER: ${MASTRA_PROVIDER:-mistral}
+      MASTRA_MODEL: ${MASTRA_MODEL:-mistral-small-latest}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      ALBERT_API_KEY: ${ALBERT_API_KEY:-}
+      ALBERT_BASE_URL: ${ALBERT_BASE_URL:-https://albert.api.etalab.gouv.fr/v1}
+      ALBERT_MODEL: ${ALBERT_MODEL:-albert-large}
+    ports:
+      - "4111:4111"
+      - "3009:3009"
+    volumes:
+      - mastra-data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://127.0.0.1:4111/api/agents'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  mastra-studio:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+    depends_on:
+      mastra-runtime:
+        condition: service_healthy
+    command:
+      [
+        "npx",
+        "mastra",
+        "studio",
+        "--port",
+        "4112",
+        "--server-host",
+        "localhost",
+        "--server-port",
+        "4112",
+        "--server-protocol",
+        "http",
+        "--server-api-prefix",
+        "/api",
+      ]
+
+  mastra-gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "4112:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      mastra-runtime:
+        condition: service_healthy
+      mastra-studio:
+        condition: service_started
+
+  mastra-seed:
+    build:
+      context: .
+    profiles: ["seed"]
+    environment:
+      NEXT_BASE_URL: http://mastra-runtime:3009
+      MASTRA_SEED_MODE: ${MASTRA_SEED_MODE:-mock}
+    depends_on:
+      mastra-runtime:
+        condition: service_healthy
+    command: ["npm", "run", "seed"]
+
+volumes:
+  mastra-data:

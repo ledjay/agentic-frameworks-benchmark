@@ -1,0 +1,13 @@
+# LangChain instrumentation -> Phoenix via OpenTelemetry/OpenInference
+langchain>=1.0.0,<2
+langchain-core>=1.0.0,<2
+langchain-openai>=1.0.0,<2
+langchain-mistralai>=1.0.0,<2
+openinference-instrumentation-langchain>=0.1.55
+opentelemetry-sdk>=1.30.0
+opentelemetry-exporter-otlp-proto-http>=1.30.0
+
+# Phoenix client/evals are useful for later experiments; the server runs via Docker here.
+arize-phoenix-client>=1.0.0
+arize-phoenix-evals>=2.0.0
+python-dotenv>=1.0.1

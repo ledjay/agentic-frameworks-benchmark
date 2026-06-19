@@ -1,0 +1,60 @@
+services:
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    volumes:
+      - mlflow-data:/mlflow
+    environment:
+      MLFLOW_TRACKING_URI: http://localhost:5001
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001')"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 40s
+
+  mlflow-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["seed"]
+    command: ["python", "app.py"]
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5001
+      GIT_PYTHON_REFRESH: quiet
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  mlflow-eval:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["eval"]
+    command: ["python", "eval_traces.py"]
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5001
+      GIT_PYTHON_REFRESH: quiet
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  mlflow-dashboard:
+    build:
+      context: .
+      dockerfile: dashboard-next/Dockerfile
+    ports:
+      - "3008:3008"
+    environment:
+      MLFLOW_BASE_URL: http://mlflow:5001
+      MLFLOW_EXPERIMENT_NAME: ansu-mlflow-genai-demo
+      MLFLOW_PYTHON: /opt/venv/bin/python
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+volumes:
+  mlflow-data:

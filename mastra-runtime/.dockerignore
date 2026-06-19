@@ -1,0 +1,8 @@
+node_modules
+.next
+.mastra/output/node_modules
+data/*.db*
+.env
+.env.*
+npm-debug.log*
+.DS_Store

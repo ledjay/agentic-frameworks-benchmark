@@ -1,0 +1,228 @@
+version: '3'
+
+silent: false
+
+dotenv:
+  - .env
+
+vars:
+  PHOENIX_COMPOSE: docker compose -f phoenix-langchain/docker-compose.yml
+  MLFLOW_COMPOSE: docker compose -f mlflow-genai/docker-compose.yml
+  MASTRA_COMPOSE: docker compose -f mastra-runtime/docker-compose.yml
+  LANGGRAPH_COMPOSE: docker compose -f langgraph-runtime/docker-compose.yml
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  ps:
+    desc: Show containers for all demos
+    cmds:
+      - '{{.PHOENIX_COMPOSE}} ps'
+      - '{{.MLFLOW_COMPOSE}} ps'
+      - '{{.MASTRA_COMPOSE}} ps'
+
+  up:
+    desc: Start Phoenix, MLflow, Mastra and LangGraph demos
+    deps: [phoenix:up, mlflow:up, mastra:up, langgraph:up]
+    cmds:
+      - task urls
+
+  urls:
+    desc: Print available demo URLs
+    silent: true
+    cmds:
+      - |
+        cat <<'EOF'
+
+        ┌─────────┬──────────────────────┬─────────────────────────────────────────────────┐
+        │ Démo    │ Service              │ URL                                             │
+        ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
+        │ Phoenix │ UI outil             │ http://localhost:6006                           │
+        │ Phoenix │ Dashboard Next AnSu  │ http://localhost:3007                           │
+        │ Phoenix │ OTLP HTTP traces     │ http://localhost:6006/v1/traces                 │
+        │ Phoenix │ OTLP gRPC            │ localhost:4317                                  │
+        │ Phoenix │ Prometheus metrics   │ http://localhost:9090/metrics                   │
+        ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
+        │ MLflow  │ UI outil             │ http://localhost:5001                           │
+        │ MLflow  │ Dashboard Next AnSu  │ http://localhost:3008                           │
+        │ MLflow  │ Gateway UI           │ http://localhost:5001/#/gateway                 │
+        │ MLflow  │ OTLP HTTP traces     │ http://localhost:5001/v1/traces                 │
+        │ MLflow  │ Gateway OpenAI API   │ http://localhost:5001/gateway/mlflow/v1         │
+        ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
+        │ Mastra  │ API serveur           │ http://localhost:4111                           │
+        │ Mastra  │ Studio + proxy        │ http://localhost:4112                           │
+        │ Mastra  │ Dashboard Next AnSu   │ http://localhost:3009                           │
+        │ Mastra  │ Agents API            │ http://localhost:4111/api/agents                │
+        │ Mastra  │ Traces API            │ http://localhost:4111/api/observability/traces  │
+        ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
+        │ LangGph │ FastAPI runtime       │ http://localhost:3010                           │
+        │ LangGph │ Health                │ http://localhost:3010/health                    │
+        └─────────┴──────────────────────┴─────────────────────────────────────────────────┘
+
+        Pour générer les données : task seed
+        Pour arrêter sans supprimer les volumes : task down
+        Pour tout nettoyer : task clean
+
+        EOF
+
+  env:check:
+    desc: Check root .env variables are loaded without printing secrets
+    silent: true
+    cmds:
+      - |
+        if [ -n "$MISTRAL_API_KEY" ]; then
+          echo "MISTRAL_API_KEY: set"
+        else
+          echo "MISTRAL_API_KEY: missing"
+        fi
+        echo "MISTRAL_MODEL: ${MISTRAL_MODEL:-<default>}"
+        echo "MASTRA_SEED_MODE: ${MASTRA_SEED_MODE:-<default>}"
+
+  seed:
+    desc: Generate demo data in Phoenix, MLflow and Mastra
+    cmds:
+      - task phoenix:seed
+      - task mlflow:seed
+      - task mlflow:eval
+      - task mastra:seed
+
+  down:
+    desc: Stop all demo services without deleting volumes
+    deps: [phoenix:down, mlflow:down, mastra:down, langgraph:down]
+
+  clean:
+    desc: Stop all demo services and delete demo volumes
+    deps: [phoenix:clean, mlflow:clean, mastra:clean, langgraph:clean]
+
+  phoenix:up:
+    desc: Start Phoenix server and its Next dashboard
+    dir: .
+    cmds:
+      - '{{.PHOENIX_COMPOSE}} up --build -d phoenix phoenix-dashboard'
+      - echo "Phoenix UI        http://localhost:6006"
+      - echo "Phoenix dashboard http://localhost:3007"
+
+  phoenix:seed:
+    desc: Run the Phoenix/LangChain demo once to create traces
+    dir: .
+    cmds:
+      - '{{.PHOENIX_COMPOSE}} run --rm phoenix-app'
+
+  phoenix:logs:
+    desc: Follow Phoenix demo logs
+    dir: .
+    cmds:
+      - '{{.PHOENIX_COMPOSE}} logs -f phoenix phoenix-dashboard'
+
+  phoenix:down:
+    desc: Stop Phoenix demo without deleting data
+    dir: .
+    cmds:
+      - '{{.PHOENIX_COMPOSE}} down --remove-orphans'
+
+  phoenix:clean:
+    desc: Stop Phoenix demo and delete volumes
+    dir: .
+    cmds:
+      - '{{.PHOENIX_COMPOSE}} down -v --remove-orphans'
+
+  mlflow:up:
+    desc: Start MLflow server and its Next dashboard
+    dir: .
+    cmds:
+      - '{{.MLFLOW_COMPOSE}} up --build -d mlflow mlflow-dashboard'
+      - echo "MLflow UI        http://localhost:5001"
+      - echo "MLflow dashboard http://localhost:3008"
+
+  mlflow:seed:
+    desc: Run the MLflow GenAI demo once to create traces and prompt versions
+    dir: .
+    cmds:
+      - '{{.MLFLOW_COMPOSE}} run --rm mlflow-app'
+
+  mlflow:eval:
+    desc: Run MLflow trace-based evaluation
+    dir: .
+    cmds:
+      - '{{.MLFLOW_COMPOSE}} run --rm mlflow-eval'
+
+  mlflow:logs:
+    desc: Follow MLflow demo logs
+    dir: .
+    cmds:
+      - '{{.MLFLOW_COMPOSE}} logs -f mlflow mlflow-dashboard'
+
+  mlflow:down:
+    desc: Stop MLflow demo without deleting data
+    dir: .
+    cmds:
+      - '{{.MLFLOW_COMPOSE}} down --remove-orphans'
+
+  mlflow:clean:
+    desc: Stop MLflow demo and delete volumes
+    dir: .
+    cmds:
+      - '{{.MLFLOW_COMPOSE}} down -v --remove-orphans'
+
+  mastra:up:
+    desc: Start Mastra runtime, Studio and Next dashboard
+    dir: .
+    cmds:
+      - '{{.MASTRA_COMPOSE}} up --build -d mastra-runtime mastra-studio mastra-gateway'
+      - echo "Mastra API       http://localhost:4111"
+      - echo "Mastra Studio    http://localhost:4112"
+      - echo "Mastra dashboard http://localhost:3009"
+
+  mastra:seed:
+    desc: Run the Mastra demo turns through the Next API
+    dir: .
+    cmds:
+      - '{{.MASTRA_COMPOSE}} run --rm mastra-seed'
+
+  mastra:logs:
+    desc: Follow Mastra demo logs
+    dir: .
+    cmds:
+      - '{{.MASTRA_COMPOSE}} logs -f mastra-runtime'
+
+  mastra:down:
+    desc: Stop Mastra demo without deleting data
+    dir: .
+    cmds:
+      - '{{.MASTRA_COMPOSE}} down --remove-orphans'
+
+  mastra:clean:
+    desc: Stop Mastra demo and delete volumes
+    dir: .
+    cmds:
+      - '{{.MASTRA_COMPOSE}} down -v --remove-orphans'
+
+  langgraph:up:
+    desc: Start LangGraph/FastAPI runtime and Next dashboard
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_COMPOSE}} up --build -d langgraph-runtime langgraph-dashboard'
+      - echo "LangGraph API    http://localhost:3010"
+      - echo "LangGraph health http://localhost:3010/health"
+      - echo "LangGraph dashboard http://localhost:3011"
+
+  langgraph:logs:
+    desc: Follow LangGraph runtime logs
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_COMPOSE}} logs -f langgraph-runtime'
+
+  langgraph:down:
+    desc: Stop LangGraph runtime
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_COMPOSE}} down --remove-orphans'
+
+  langgraph:clean:
+    desc: Stop LangGraph runtime and delete volumes
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_COMPOSE}} down -v --remove-orphans'

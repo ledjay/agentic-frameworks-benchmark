@@ -21,6 +21,92 @@ services:
       retries: 12
       start_period: 10s
 
+  langgraph-runtime-mlflow:
+    build:
+      context: .
+    environment:
+      PORT: 3021
+      OBSERVABILITY_BACKEND: mlflow
+      OBSERVABILITY_PROJECT: ansu-langgraph-python-mlflow
+      MLFLOW_TRACKING_URI: http://host.docker.internal:5001
+      MLFLOW_UI_BASE_URL: http://localhost:5001
+      MLFLOW_EXPERIMENT_NAME: ansu-langgraph-python-mlflow
+      ALBERT_API_KEY: ${ALBERT_API_KEY:-}
+      ALBERT_BASE_URL: ${ALBERT_BASE_URL:-https://albert.api.etalab.gouv.fr/v1}
+      ALBERT_MODEL: ${ALBERT_MODEL:-albert-large}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
+      LANGGRAPH_PROVIDER: ${LANGGRAPH_PROVIDER:-albert}
+      LANGSMITH_TRACING: false
+    ports:
+      - "3021:3021"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:3021/health').read()\""
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  langgraph-runtime-phoenix:
+    build:
+      context: .
+    environment:
+      PORT: 3022
+      OBSERVABILITY_BACKEND: phoenix
+      OBSERVABILITY_PROJECT: ansu-langgraph-python-phoenix
+      PHOENIX_PROJECT_NAME: ansu-langgraph-python-phoenix
+      PHOENIX_COLLECTOR_ENDPOINT: http://host.docker.internal:6006/v1/traces
+      PHOENIX_BASE_URL: http://localhost:6006
+      ALBERT_API_KEY: ${ALBERT_API_KEY:-}
+      ALBERT_BASE_URL: ${ALBERT_BASE_URL:-https://albert.api.etalab.gouv.fr/v1}
+      ALBERT_MODEL: ${ALBERT_MODEL:-albert-large}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
+      LANGGRAPH_PROVIDER: ${LANGGRAPH_PROVIDER:-albert}
+      LANGSMITH_TRACING: false
+    ports:
+      - "3022:3022"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:3022/health').read()\""
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  langgraph-runtime-langfuse:
+    build:
+      context: .
+    environment:
+      PORT: 3023
+      OBSERVABILITY_BACKEND: langfuse
+      OBSERVABILITY_PROJECT: ansu-langgraph-python-langfuse
+      LANGFUSE_BASE_URL: http://host.docker.internal:3012
+      LANGFUSE_UI_BASE_URL: http://localhost:3012
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-ansu-poc}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-ansu-poc}
+      LANGCHAIN_CALLBACKS_BACKGROUND: "false"
+      ALBERT_API_KEY: ${ALBERT_API_KEY:-}
+      ALBERT_BASE_URL: ${ALBERT_BASE_URL:-https://albert.api.etalab.gouv.fr/v1}
+      ALBERT_MODEL: ${ALBERT_MODEL:-albert-large}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
+      LANGGRAPH_PROVIDER: ${LANGGRAPH_PROVIDER:-albert}
+      LANGSMITH_TRACING: false
+    ports:
+      - "3023:3023"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:3023/health').read()\""
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
   langgraph-dashboard:
     build:
       context: ./dashboard-next

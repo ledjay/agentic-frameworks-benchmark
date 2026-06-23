@@ -30,8 +30,8 @@ tasks:
       - '{{.LANGFUSE_COMPOSE}} ps'
 
   up:
-    desc: Start legacy demos plus runtime services (playground remains foreground via task playground:dev)
-    deps: [phoenix:up, mlflow:up, mastra:up, langgraph:up, langgraph-ts:up]
+    desc: Start benchmark services including background playground
+    deps: [phoenix:up, mlflow:up, mastra:up, langgraph:up, langgraph-observability:up, langgraph-ts:up, langfuse:up, playground:up]
     cmds:
       - task urls
 
@@ -65,15 +65,20 @@ tasks:
         ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
         │ LangGph │ FastAPI runtime       │ http://localhost:3010                           │
         │ LangGph │ Health                │ http://localhost:3010/health                    │
-        │ LangGTS │ Node runtime          │ http://localhost:3014                           │
-        │ LangGTS │ Health                │ http://localhost:3014/health                    │
+        │ LGPyObs │ MLflow runtime         │ http://localhost:3021/health                    │
+        │ LGPyObs │ Phoenix runtime        │ http://localhost:3022/health                    │
+        │ LGPyObs │ Langfuse runtime       │ http://localhost:3023/health                    │
+        │ LangGTS │ Node runtime           │ http://localhost:3014                           │
+        │ LangGTS │ Health                 │ http://localhost:3014/health                    │
         ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
         │ Langfuse│ UI outil             │ http://localhost:3012                           │
         │ Langfuse│ Worker health        │ http://localhost:3032/api/health                │
         │ Playgrd │ Harness benchmark    │ http://localhost:3013                           │
         └─────────┴──────────────────────┴─────────────────────────────────────────────────┘
 
-        Pour générer les données : task seed
+        Playground lancé en arrière-plan par task up. Logs : /tmp/ansu-playground.log
+        Pour un mode interactif foreground : task playground:dev
+        Pour générer les données historiques : task seed
         Pour arrêter sans supprimer les volumes : task down
         Pour tout nettoyer : task clean
 
@@ -102,11 +107,11 @@ tasks:
 
   down:
     desc: Stop all demo services without deleting volumes
-    deps: [phoenix:down, mlflow:down, mastra:down, langgraph:down, langgraph-ts:down, langfuse:down]
+    deps: [phoenix:down, mlflow:down, mastra:down, langgraph:down, langgraph-ts:down, langfuse:down, playground:down]
 
   clean:
     desc: Stop all demo services and delete demo volumes
-    deps: [phoenix:clean, mlflow:clean, mastra:clean, langgraph:clean, langgraph-ts:clean, langfuse:clean]
+    deps: [phoenix:clean, mlflow:clean, mastra:clean, langgraph:clean, langgraph-ts:clean, langfuse:clean, playground:down]
 
   phoenix:up:
     desc: Start Phoenix server and its Next dashboard
@@ -217,6 +222,31 @@ tasks:
       - npm install
       - npm run dev
 
+  playground:up:
+    desc: Start the shared AnSu benchmark playground in background
+    dir: pocs/playground
+    cmds:
+      - npm install
+      - |
+        if lsof -ti :3013 >/dev/null 2>&1; then
+          echo "Playground already listening on http://localhost:3013"
+        else
+          nohup npm run dev > /tmp/ansu-playground.log 2>&1 &
+          echo $$! > /tmp/ansu-playground.pid
+          echo "Playground http://localhost:3013"
+          echo "Logs       /tmp/ansu-playground.log"
+        fi
+
+  playground:down:
+    desc: Stop background playground dev server
+    cmds:
+      - |
+        if [ -f /tmp/ansu-playground.pid ]; then
+          kill $(cat /tmp/ansu-playground.pid) 2>/dev/null || true
+          rm -f /tmp/ansu-playground.pid
+        fi
+        lsof -ti :3013 | xargs kill 2>/dev/null || true
+
   playground:build:
     desc: Build the shared AnSu benchmark playground
     dir: pocs/playground
@@ -265,6 +295,21 @@ tasks:
       - echo "LangGraph API    http://localhost:3010"
       - echo "LangGraph health http://localhost:3010/health"
       - echo "LangGraph dashboard http://localhost:3011"
+
+  langgraph-observability:up:
+    desc: Start LangGraph Python observability benchmark runtimes
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_COMPOSE}} up --build -d langgraph-runtime-mlflow langgraph-runtime-phoenix langgraph-runtime-langfuse'
+      - echo "LangGraph Python + MLflow   http://localhost:3021/health"
+      - echo "LangGraph Python + Phoenix  http://localhost:3022/health"
+      - echo "LangGraph Python + Langfuse http://localhost:3023/health"
+
+  langgraph-observability:logs:
+    desc: Follow LangGraph Python observability benchmark logs
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_COMPOSE}} logs -f langgraph-runtime-mlflow langgraph-runtime-phoenix langgraph-runtime-langfuse'
 
   langgraph-ts:up:
     desc: Start LangGraph TypeScript runtime

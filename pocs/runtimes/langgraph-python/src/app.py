@@ -4,11 +4,13 @@ import json
 import os
 import re
 import time
+from contextlib import nullcontext
 from typing import Annotated, Any, Literal, TypedDict
 
 import langsmith as ls
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from langchain_core.callbacks import BaseCallbackHandler
 from langsmith import Client as LangSmithClient
 from langchain.chat_models import init_chat_model
 from langchain.tools import tool
@@ -23,6 +25,176 @@ AGENT_ID = "agent-naif-ansu-langgraph"
 AGENT_VERSION = "langgraph-poc-v0.1.0"
 PROMPT_VERSION = "naive-prompt-v0.1.0"
 SCORER_VERSION = "naivety-contract-v0.1.0"
+OBSERVABILITY_BACKEND = os.getenv("OBSERVABILITY_BACKEND", "none").lower()
+OBSERVABILITY_PROJECT = os.getenv("OBSERVABILITY_PROJECT", "ansu-langgraph-python-observability")
+
+_observability_initialized = False
+
+
+def setup_observability() -> None:
+    """Configure the selected native/documented observability integration.
+
+    - mlflow: official MLflow LangChain autolog integration.
+    - phoenix: official Phoenix register(auto_instrument=True) integration.
+    - langfuse: callback handler is created per request and passed to graph.invoke.
+    """
+    global _observability_initialized
+    if _observability_initialized:
+        return
+    _observability_initialized = True
+
+    if OBSERVABILITY_BACKEND == "mlflow":
+        try:
+            import mlflow
+
+            mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5001"))
+            mlflow.set_experiment(os.getenv("MLFLOW_EXPERIMENT_NAME", OBSERVABILITY_PROJECT))
+            mlflow.langchain.autolog()
+        except Exception as exc:
+            print(f"[observability] MLflow setup failed: {exc}")
+
+    elif OBSERVABILITY_BACKEND == "phoenix":
+        try:
+            from phoenix.otel import register
+
+            register(
+                project_name=os.getenv("PHOENIX_PROJECT_NAME", OBSERVABILITY_PROJECT),
+                endpoint=os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "http://127.0.0.1:6006/v1/traces"),
+                auto_instrument=True,
+            )
+        except TypeError:
+            # Older arize-phoenix-otel versions infer endpoint from env.
+            try:
+                from phoenix.otel import register
+
+                os.environ.setdefault("PHOENIX_COLLECTOR_ENDPOINT", os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "http://127.0.0.1:6006/v1/traces"))
+                register(project_name=os.getenv("PHOENIX_PROJECT_NAME", OBSERVABILITY_PROJECT), auto_instrument=True)
+            except Exception as exc:
+                print(f"[observability] Phoenix setup failed: {exc}")
+        except Exception as exc:
+            print(f"[observability] Phoenix setup failed: {exc}")
+
+
+def build_langfuse_handler(turn: "AgentTurnRequest") -> BaseCallbackHandler | None:
+    if OBSERVABILITY_BACKEND != "langfuse":
+        return None
+    try:
+        from langfuse.langchain import CallbackHandler
+
+        return CallbackHandler(
+            session_id=turn.sessionId,
+            user_id=turn.userId,
+            tags=["ansu", "benchmark", "langgraph-python", "langfuse"],
+        )
+    except TypeError:
+        try:
+            from langfuse.langchain import CallbackHandler
+
+            return CallbackHandler()
+        except Exception as exc:
+            print(f"[observability] Langfuse handler setup failed: {exc}")
+            return None
+    except Exception as exc:
+        print(f"[observability] Langfuse handler setup failed: {exc}")
+        return None
+
+
+def native_observability_span(turn: "AgentTurnRequest", run_id: str):
+    """Create a parent observability span for post-run evaluation.
+
+    The LangGraph business graph remains free of score nodes. This parent span
+    lets MLflow/Phoenix attach the post-run evaluator span to the same trace.
+    Langfuse uses its callback trace plus create_score(trace_id=...).
+    """
+    if OBSERVABILITY_BACKEND == "mlflow":
+        try:
+            import mlflow
+
+            return mlflow.start_span(name="ansu.agent_turn", span_type="CHAIN")
+        except Exception as exc:
+            print(f"[observability] MLflow parent span failed: {exc}")
+            return nullcontext()
+
+    if OBSERVABILITY_BACKEND == "phoenix":
+        try:
+            from opentelemetry import trace
+
+            return trace.get_tracer("ansu.langgraph.runtime").start_as_current_span("ansu.agent_turn")
+        except Exception as exc:
+            print(f"[observability] Phoenix parent span failed: {exc}")
+            return nullcontext()
+
+    return nullcontext()
+
+
+def set_native_span_inputs(span: Any, turn: "AgentTurnRequest", run_id: str) -> None:
+    try:
+        payload = {"runId": run_id, "message": turn.message, "sessionId": turn.sessionId, "userId": turn.userId}
+        if hasattr(span, "set_inputs"):
+            span.set_inputs(payload)
+        elif hasattr(span, "set_attribute"):
+            span.set_attribute("openinference.span.kind", "CHAIN")
+            span.set_attribute("input.value", json.dumps(payload, ensure_ascii=False))
+            span.set_attribute("ansu.run_id", run_id)
+            span.set_attribute("ansu.session_id", turn.sessionId)
+            span.set_attribute("ansu.user_id", turn.userId)
+    except Exception:
+        pass
+
+
+def set_native_span_outputs(span: Any, answer: str, score: dict[str, Any]) -> None:
+    try:
+        payload = {"answer": answer, "score": score}
+        if hasattr(span, "set_outputs"):
+            span.set_outputs(payload)
+        elif hasattr(span, "set_attribute"):
+            span.set_attribute("output.value", json.dumps(payload, ensure_ascii=False))
+            span.set_attribute("ansu.score.value", float(score.get("score", 0.0) or 0.0))
+            span.set_attribute("ansu.score.reason", str(score.get("reason") or ""))
+    except Exception:
+        pass
+
+
+def runtime_observability_result(run_id: str, turn: "AgentTurnRequest", handler: BaseCallbackHandler | None = None) -> dict[str, Any]:
+    if OBSERVABILITY_BACKEND == "none":
+        return {"provider": "none", "status": "skipped", "message": "Runtime observability disabled."}
+
+    if OBSERVABILITY_BACKEND == "mlflow":
+        base_url = os.getenv("MLFLOW_UI_BASE_URL", os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5001"))
+        return {
+            "provider": "mlflow",
+            "status": "sent",
+            "traceId": run_id,
+            "url": base_url,
+            "message": "MLflow LangChain autolog enabled in LangGraph Python runtime.",
+            "raw": {"experiment": os.getenv("MLFLOW_EXPERIMENT_NAME", OBSERVABILITY_PROJECT)},
+        }
+
+    if OBSERVABILITY_BACKEND == "phoenix":
+        base_url = os.getenv("PHOENIX_BASE_URL", "http://localhost:6006")
+        return {
+            "provider": "phoenix",
+            "status": "sent",
+            "traceId": run_id,
+            "url": base_url,
+            "message": "Phoenix register(auto_instrument=True) enabled in LangGraph Python runtime.",
+            "raw": {"project": os.getenv("PHOENIX_PROJECT_NAME", OBSERVABILITY_PROJECT)},
+        }
+
+    if OBSERVABILITY_BACKEND == "langfuse":
+        trace_id = getattr(handler, "last_trace_id", None) if handler is not None else None
+        base_url = os.getenv("LANGFUSE_UI_BASE_URL", os.getenv("LANGFUSE_BASE_URL", "http://localhost:3012"))
+        result = {
+            "provider": "langfuse",
+            "status": "sent" if trace_id else "sent",
+            "traceId": trace_id or run_id,
+            "url": f"{base_url}/project/ansu-langfuse-project/traces/{trace_id}" if trace_id else base_url,
+            "message": "Langfuse LangChain CallbackHandler passed to LangGraph invocation.",
+        }
+        return result
+
+    return {"provider": OBSERVABILITY_BACKEND, "status": "skipped"}
+
 
 DEFAULT_TEACHER_CONFIG = {
     "niveauScolaire": "5e",
@@ -46,7 +218,7 @@ EXPECTED_NOTIONS = [
     },
 ]
 
-CANONICAL_GRAPH = ["moderate_input", "retrieve_context", "generate_answer", "score_naivety"]
+CANONICAL_GRAPH = ["llm_call", "tool_node"]
 
 
 def canonical_guardrail(message: str) -> dict[str, Any]:
@@ -100,6 +272,8 @@ def canonical_raw(message: str, config: "TeacherConfig") -> dict[str, Any]:
         "toolCalls": [{"name": "searchKnowledge", "args": {"notion": config.notion}}],
         "toolResults": canonical_knowledge(config),
     }
+
+setup_observability()
 
 app = FastAPI(title="AnSu LangGraph Runtime POC")
 checkpointer = InMemorySaver()
@@ -172,6 +346,7 @@ Contrat impératif :
 - ne pas produire une réponse experte prête à recopier
 - poser une question de relance courte
 - reformuler la confusion de l’élève avec bienveillance
+- si l’élève demande un indice, une ressource, ou de chercher quelque chose, appelle obligatoirement l’outil searchKnowledge avant de répondre
 - si tu utilises une ressource via tool, ne cite que les sources réellement fournies par le tool ; n’invente jamais d’URL
 
 Tu dois répondre en français, en 1 à 3 phrases maximum.
@@ -260,77 +435,118 @@ def tool_node(state: AgentState) -> dict[str, Any]:
     return {"messages": result}
 
 
-def should_continue(state: AgentState) -> Literal["tool_node", "score_node"]:
+def should_continue(state: AgentState) -> Literal["tool_node", "__end__"]:
     last_message = state["messages"][-1]
     if getattr(last_message, "tool_calls", None):
         return "tool_node"
-    return "score_node"
+    return END
 
-
-def score_node(state: AgentState) -> dict[str, Any]:
-    last_ai = next((m for m in reversed(state["messages"]) if isinstance(m, AIMessage) and not m.tool_calls), None)
-    last_human = next((m for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), None)
-    answer = str(last_ai.content if last_ai else "")
-    user_input = str(last_human.content if last_human else "")
-    usage = extract_usage(last_ai)
-    score = score_naivety(user_input, answer)
-
-    # Make Albert cost/impact visible in LangSmith even when they are not mapped
-    # to LangSmith's standard total_cost fields.
-    try:
-        run_tree = ls.get_current_run_tree()
-        if run_tree and usage:
-            # LangSmith-native cost mapping: this should feed the Cost column.
-            # Albert currently returns cost=0.0 for these tests, so the column
-            # may show 0/empty, but the value is provided using LangSmith's
-            # documented usage_metadata.total_cost field.
-            native_usage_metadata = {
-                "input_tokens": usage.get("inputTokens"),
-                "output_tokens": usage.get("outputTokens"),
-                "total_tokens": usage.get("totalTokens"),
-                "total_cost": usage.get("cost"),
-            }
-            run_tree.set(usage_metadata={k: v for k, v in native_usage_metadata.items() if v is not None})
-
-            run_tree.metadata["ansuUsageCost"] = usage.get("cost")
-            run_tree.metadata["ansuImpactKWh"] = (usage.get("impacts") or {}).get("kWh")
-            run_tree.metadata["ansuImpactKgCO2eq"] = (usage.get("impacts") or {}).get("kgCO2eq")
-            run_tree.metadata["ansuInputTokens"] = usage.get("inputTokens")
-            run_tree.metadata["ansuOutputTokens"] = usage.get("outputTokens")
-            run_tree.metadata["ansuTotalTokens"] = usage.get("totalTokens")
-            run_tree.metadata["ansuScore"] = score.get("score")
-            run_tree.metadata["ansuScorerVersion"] = score.get("scorerVersion")
-
-            # LangSmith-native score/feedback attached to the trace root so it
-            # appears in the Feedback section and can be filtered/aggregated.
-            LangSmithClient().create_feedback(
-                key="ansu_naivety",
-                score=score.get("score"),
-                trace_id=run_tree.trace_id,
-                comment=score.get("reason"),
-                source_info={
-                    "scorerVersion": score.get("scorerVersion"),
-                    "directAnswerRefusal": (score.get("guardrails") or {}).get("directAnswerRefusal"),
-                    "expertAnswerRisk": (score.get("guardrails") or {}).get("expertAnswerRisk"),
-                    "repairApplied": (score.get("guardrails") or {}).get("repairApplied"),
-                },
-            )
-    except Exception:
-        # Tracing should never break the runtime POC.
-        pass
-
-    return {"ansu_usage": usage, "ansu_score": score}
 
 
 builder = StateGraph(AgentState)
 builder.add_node("llm_call", llm_call)
 builder.add_node("tool_node", tool_node)
-builder.add_node("score_node", score_node)
 builder.add_edge(START, "llm_call")
-builder.add_conditional_edges("llm_call", should_continue, ["tool_node", "score_node"])
+builder.add_conditional_edges("llm_call", should_continue, ["tool_node", END])
 builder.add_edge("tool_node", "llm_call")
-builder.add_edge("score_node", END)
 graph = builder.compile(checkpointer=checkpointer)
+
+
+def publish_score_to_native_trace(score: dict[str, Any], *, user_input: str, answer: str) -> None:
+    """Publish AnSu score into the native observability trace, not only in HTTP JSON.
+
+    The agent graph does not include a scoring node. This runs after the
+    business graph has completed so scoring stays an observability/evaluation
+    concern, not part of the agentic path under benchmark. Failures are
+    intentionally swallowed: scoring visibility must not break the agent turn.
+    """
+    value = float(score.get("score", 0.0) or 0.0)
+    passed = value >= 0.85
+    reason = str(score.get("reason") or "")
+    metadata = {
+        "score": value,
+        "passed": passed,
+        "reason": reason,
+        "scorerVersion": str(score.get("scorerVersion") or SCORER_VERSION),
+        "guardrails": json.dumps(score.get("guardrails") or {}, ensure_ascii=False),
+        "inputPreview": user_input[:500],
+        "answerPreview": answer[:500],
+    }
+
+    if OBSERVABILITY_BACKEND == "mlflow":
+        try:
+            import mlflow
+
+            mlflow.update_current_trace(
+                tags={
+                    "ansu.score.name": "ansu_naivety",
+                    "ansu.score.passed": str(passed).lower(),
+                },
+                metadata={k: str(v) for k, v in metadata.items()},
+            )
+            with mlflow.start_span(name="ansu_naivety_score", span_type="EVALUATOR") as span:
+                span.set_inputs({"user_input": user_input, "answer": answer})
+                span.set_outputs({"score": value, "passed": passed, "reason": reason})
+                span.set_attributes({f"ansu.{k}": v for k, v in metadata.items()})
+                trace_id = getattr(span, "trace_id", None) or getattr(span, "trace_id_", None)
+                span_id = getattr(span, "span_id", None) or getattr(span, "span_id_", None)
+                if trace_id:
+                    try:
+                        mlflow.log_feedback(
+                            trace_id=str(trace_id),
+                            span_id=str(span_id) if span_id else None,
+                            name="ansu_naivety",
+                            value=value,
+                            rationale=reason,
+                            metadata={"passed": passed, "scorerVersion": metadata["scorerVersion"]},
+                        )
+                    except Exception as exc:
+                        print(f"[observability] MLflow feedback logging skipped: {exc}")
+        except Exception as exc:
+            print(f"[observability] MLflow score publish failed: {exc}")
+
+    elif OBSERVABILITY_BACKEND == "phoenix":
+        try:
+            from opentelemetry import trace
+
+            tracer = trace.get_tracer("ansu.langgraph.score")
+            with tracer.start_as_current_span("ansu_naivety_score") as span:
+                span.set_attribute("openinference.span.kind", "EVALUATOR")
+                span.set_attribute("input.value", user_input)
+                span.set_attribute("output.value", json.dumps({"score": value, "passed": passed, "reason": reason}, ensure_ascii=False))
+                span.set_attribute("ansu.score.name", "ansu_naivety")
+                span.set_attribute("ansu.score.value", value)
+                span.set_attribute("ansu.score.passed", passed)
+                span.set_attribute("ansu.score.reason", reason)
+                span.set_attribute("ansu.scorer.version", metadata["scorerVersion"])
+                span.set_attribute("ansu.guardrails", metadata["guardrails"])
+        except Exception as exc:
+            print(f"[observability] Phoenix score publish failed: {exc}")
+
+
+def publish_langfuse_score(score: dict[str, Any], trace_id: str | None) -> None:
+    if OBSERVABILITY_BACKEND != "langfuse" or not trace_id:
+        return
+    try:
+        from langfuse import get_client
+
+        value = float(score.get("score", 0.0) or 0.0)
+        client = get_client()
+        client.create_score(
+            trace_id=trace_id,
+            name="ansu_naivety",
+            value=value,
+            data_type="NUMERIC",
+            comment=str(score.get("reason") or ""),
+            metadata={
+                "passed": value >= 0.85,
+                "scorerVersion": str(score.get("scorerVersion") or SCORER_VERSION),
+                "guardrails": score.get("guardrails") or {},
+            },
+        )
+        client.flush()
+    except Exception as exc:
+        print(f"[observability] Langfuse score publish failed: {exc}")
 
 
 def score_naivety(user_input: str, answer: str) -> dict[str, Any]:
@@ -440,6 +656,13 @@ def health() -> dict[str, Any]:
             "project": os.getenv("LANGSMITH_PROJECT", "ansu-langgraph-runtime-dev"),
             "note": "LangSmith est utilisé uniquement en debug dev pour ce POC.",
         },
+        "observability": {
+            "backend": OBSERVABILITY_BACKEND,
+            "project": OBSERVABILITY_PROJECT,
+            "mlflowTrackingUri": os.getenv("MLFLOW_TRACKING_URI"),
+            "phoenixEndpoint": os.getenv("PHOENIX_COLLECTOR_ENDPOINT"),
+            "langfuseBaseUrl": os.getenv("LANGFUSE_BASE_URL"),
+        },
     }
 
 
@@ -462,7 +685,11 @@ def agent_turn(turn: AgentTurnRequest) -> dict[str, Any]:
             "usage": canonical_usage(answer),
             "output": {"answer": answer, "raw": canonical_raw(turn.message, turn.teacherConfig)},
             "score": score_naivety(turn.message, answer),
+            "observability": runtime_observability_result(run_id, turn),
         }
+
+    langfuse_handler = build_langfuse_handler(turn)
+    callbacks = [langfuse_handler] if langfuse_handler is not None else []
 
     config = {
         "configurable": {"thread_id": thread_key(turn.userId, turn.sessionId)},
@@ -476,6 +703,11 @@ def agent_turn(turn: AgentTurnRequest) -> dict[str, Any]:
             "model": model_id(),
             "requestedLlmGateway": turn.llm.gateway,
             "requestedModel": turn.llm.model,
+            "observabilityBackend": OBSERVABILITY_BACKEND,
+            "observabilityProject": OBSERVABILITY_PROJECT,
+            "langfuse_user_id": turn.userId,
+            "langfuse_session_id": turn.sessionId,
+            "langfuse_tags": ["ansu", "benchmark", "langgraph-python", OBSERVABILITY_BACKEND],
             # LangSmith-recognized fields for cost mapping / filtering.
             # The ChatOpenAI child run may still expose ls_provider="openai"
             # because Albert is called through an OpenAI-compatible adapter.
@@ -483,18 +715,37 @@ def agent_turn(turn: AgentTurnRequest) -> dict[str, Any]:
             "ls_model_name": model_id(),
         },
         "run_name": "ansu.langgraph.agent_turn",
+        "callbacks": callbacks,
     }
     input_message = HumanMessage(
         content=turn.message,
         additional_kwargs={"teacherConfig": turn.teacherConfig.model_dump()},
     )
-    result = graph.invoke({"messages": [input_message]}, config)
-    messages: list[BaseMessage] = result["messages"]
-    last_ai = next((m for m in reversed(messages) if isinstance(m, AIMessage) and not m.tool_calls), None)
-    answer = str(last_ai.content if last_ai else messages[-1].content)
-    tool_calls, tool_results = collect_tool_events(messages)
-    usage = result.get("ansu_usage") or extract_usage(last_ai)
-    score = result.get("ansu_score") or score_naivety(turn.message, answer)
+    with native_observability_span(turn, run_id) as native_span:
+        set_native_span_inputs(native_span, turn, run_id)
+        result = graph.invoke({"messages": [input_message]}, config)
+        if langfuse_handler is not None:
+            try:
+                flush = getattr(langfuse_handler, "flush", None) or getattr(langfuse_handler, "flushAsync", None)
+                if callable(flush):
+                    maybe_result = flush()
+                    if hasattr(maybe_result, "__await__"):
+                        # FastAPI sync endpoint: the handler usually flushes in background; avoid running an event loop here.
+                        pass
+            except Exception:
+                pass
+        messages: list[BaseMessage] = result["messages"]
+        last_ai = next((m for m in reversed(messages) if isinstance(m, AIMessage) and not m.tool_calls), None)
+        answer = str(last_ai.content if last_ai else messages[-1].content)
+        tool_calls, tool_results = collect_tool_events(messages)
+        usage = result.get("ansu_usage") or extract_usage(last_ai)
+        score = score_naivety(turn.message, answer)
+        publish_score_to_native_trace(score, user_input=turn.message, answer=answer)
+        set_native_span_outputs(native_span, answer, score)
+
+    observability = runtime_observability_result(run_id, turn, langfuse_handler)
+    if OBSERVABILITY_BACKEND == "langfuse":
+        publish_langfuse_score(score, observability.get("traceId") if isinstance(observability, dict) else None)
 
     return {
         "mode": turn.mode,
@@ -517,6 +768,7 @@ def agent_turn(turn: AgentTurnRequest) -> dict[str, Any]:
             },
         },
         "score": score,
+        "observability": observability,
     }
 
 

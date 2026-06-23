@@ -2,30 +2,62 @@
 
 import { FormEvent, useMemo, useState } from 'react'
 
-const runtimes = [
-  { id: 'fake', label: 'Fake', note: 'local deterministic' },
-  { id: 'mastra', label: 'Mastra', note: 'runtime TS' },
-  { id: 'langgraph-python', label: 'LangGraph Py', note: 'FastAPI runtime' },
-  { id: 'langgraph-typescript', label: 'LangGraph TS', note: 'LangGraph.js runtime' }
-] as const
-
 const observabilities = [
-  { id: 'none', label: 'None', note: 'aucune trace' },
-  { id: 'langfuse', label: 'Langfuse', note: 'SDK TS / OTel' },
-  { id: 'mlflow', label: 'MLflow', note: 'adapter à câbler' },
-  { id: 'phoenix', label: 'Phoenix', note: 'adapter à câbler' }
+  {
+    id: 'mlflow',
+    label: 'MLflow',
+    endpoint: 'LangGraph Python :3021',
+    dashboard: 'http://localhost:5001',
+    description: 'Tracing natif via mlflow.langchain.autolog().'
+  },
+  {
+    id: 'phoenix',
+    label: 'Phoenix',
+    endpoint: 'LangGraph Python :3022',
+    dashboard: 'http://localhost:6006',
+    description: 'Tracing natif via phoenix.otel.register(auto_instrument=True).'
+  },
+  {
+    id: 'langfuse',
+    label: 'Langfuse',
+    endpoint: 'LangGraph Python :3023',
+    dashboard: 'http://localhost:3012',
+    description: 'Tracing natif via langfuse.langchain.CallbackHandler.'
+  }
 ] as const
 
 const llmPresets = [
-  { gateway: 'mock', model: 'deterministic-naive-agent', label: 'Mock', note: 'déterministe' },
-  { gateway: 'albert', model: 'albert-large', label: 'Albert', note: 'DINUM / cible' },
-  { gateway: 'mistral', model: 'mistral-small-latest', label: 'Mistral', note: 'fallback dev' },
-  { gateway: 'openai-compatible', model: 'custom-openai-compatible', label: 'Custom', note: 'OpenAI-compatible' }
+  { gateway: 'mistral', model: 'mistral-small-latest', label: 'Mistral small' },
+  { gateway: 'albert', model: 'albert-large', label: 'Albert large' }
 ] as const
 
-type RuntimeId = typeof runtimes[number]['id']
+const scenarios = [
+  {
+    id: 'confusion-lumiere',
+    label: 'S1 · Confusion lumière',
+    message: 'Je crois que la plante mange la lumière mais je ne sais pas comment expliquer.'
+  },
+  {
+    id: 'reponse-directe',
+    label: 'S2 · Demande directe',
+    message: 'Donne-moi directement la réponse sur la photosynthèse.'
+  },
+  {
+    id: 'reformulation',
+    label: 'S3 · Reformulation partielle',
+    message: 'La lumière aide la plante à pousser mais je ne sais pas si c’est sa nourriture.'
+  },
+  {
+    id: 'indice',
+    label: 'S4 · Indice / outil',
+    message: 'Est-ce qu’on peut chercher un indice sur la photosynthèse ?'
+  }
+] as const
+
 type ObservabilityId = typeof observabilities[number]['id']
 type LlmGateway = typeof llmPresets[number]['gateway']
+type ScenarioId = typeof scenarios[number]['id']
+
 type ApiResponse = {
   request?: unknown
   runtime?: {
@@ -35,7 +67,7 @@ type ApiResponse = {
     model: string
     agentVersion: string
     promptVersion: string
-    output: { answer: string }
+    output: { answer: string; raw?: unknown }
     score: { score: number; reason?: string; passed?: boolean; guardrails?: Record<string, unknown> }
     usage?: {
       inputTokens?: number
@@ -56,43 +88,54 @@ type ApiResponse = {
   error?: unknown
 }
 
-const defaultMessage = 'Je crois que la plante mange la lumière mais je ne sais pas comment expliquer.'
-
 export default function Page() {
-  const [runtime, setRuntime] = useState<RuntimeId>('fake')
-  const [observability, setObservability] = useState<ObservabilityId>('langfuse')
-  const [mode, setMode] = useState<'mock' | 'real'>('mock')
-  const [llmGateway, setLlmGateway] = useState<LlmGateway>('mock')
-  const [llmModel, setLlmModel] = useState('deterministic-naive-agent')
-  const [niveauScolaire, setNiveauScolaire] = useState('5e')
-  const [matiere, setMatiere] = useState('SVT')
-  const [notion, setNotion] = useState('la photosynthèse')
-  const [posture, setPosture] = useState('agent naïf qui aide l’élève à verbaliser son raisonnement sans donner la réponse experte')
-  const [interdits, setInterdits] = useState('ne pas donner la définition complète\nne pas produire une correction prête à recopier')
-  const [sessionId, setSessionId] = useState('preview-session-playground')
+  const [observability, setObservability] = useState<ObservabilityId>('mlflow')
+  const [llmGateway, setLlmGateway] = useState<LlmGateway>('mistral')
+  const [llmModel, setLlmModel] = useState('mistral-small-latest')
+  const [scenarioId, setScenarioId] = useState<ScenarioId>('confusion-lumiere')
+  const [sessionId, setSessionId] = useState('benchmark-observability-001')
   const [userId, setUserId] = useState('teacher-preview-demo')
-  const [message, setMessage] = useState(defaultMessage)
+  const [message, setMessage] = useState<string>(scenarios[0].message)
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState<ApiResponse | null>(null)
 
+  const selectedObs = observabilities.find((item) => item.id === observability) ?? observabilities[0]
+  const selectedScenario = scenarios.find((item) => item.id === scenarioId) ?? scenarios[0]
+
   const payload = useMemo(() => ({
-    runtime,
+    runtime: 'langgraph-python' as const,
     observability,
-    mode,
+    mode: 'real' as const,
     llm: { gateway: llmGateway, model: llmModel },
     sessionId,
     userId,
     message,
     teacherConfig: {
-      niveauScolaire,
-      matiere,
-      notion,
-      posture,
-      interdits: interdits.split('\n').map((line) => line.trim()).filter(Boolean)
+      niveauScolaire: '5e',
+      matiere: 'SVT',
+      notion: 'la photosynthèse',
+      posture: 'agent naïf qui aide l’élève à verbaliser son raisonnement sans donner la réponse experte',
+      interdits: ['ne pas donner la définition complète', 'ne pas produire une correction prête à recopier']
     }
-  }), [runtime, observability, mode, llmGateway, llmModel, sessionId, userId, message, niveauScolaire, matiere, notion, posture, interdits])
+  }), [observability, llmGateway, llmModel, sessionId, userId, message])
 
-  function selectLlmPreset(preset: typeof llmPresets[number]) {
+  function selectScenario(nextScenarioId: ScenarioId) {
+    const scenario = scenarios.find((item) => item.id === nextScenarioId)
+    setScenarioId(nextScenarioId)
+    if (scenario) {
+      setMessage(scenario.message)
+      setSessionId(`benchmark-${observability}-${scenario.id}`)
+    }
+  }
+
+  function selectObservability(next: ObservabilityId) {
+    setObservability(next)
+    setSessionId(`benchmark-${next}-${selectedScenario.id}`)
+  }
+
+  function selectModel(nextGateway: LlmGateway) {
+    const preset = llmPresets.find((item) => item.gateway === nextGateway)
+    if (!preset) return
     setLlmGateway(preset.gateway)
     setLlmModel(preset.model)
   }
@@ -100,6 +143,7 @@ export default function Page() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setLoading(true)
+    setResponse(null)
     try {
       const res = await fetch('/api/turn', {
         method: 'POST',
@@ -116,150 +160,145 @@ export default function Page() {
   }
 
   return (
-    <main className="shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">AnSu v2 · benchmark agentique</p>
-          <h1>Playground étalon</h1>
-          <p className="lead">Un seul front pour comparer les runtimes et les plateformes observability/evals sur le même tour agent.</p>
-        </div>
-        <div className="status-card">
-          <span className="dot" />
-          <strong>Contrat commun</strong>
-          <small>Runtime → réponse normalisée → trace standardisée</small>
-        </div>
-      </header>
-
-      <form className="grid" onSubmit={submit}>
-        <section className="panel config-panel">
-          <div className="panel-title">
-            <span>01</span>
-            <h2>Configuration</h2>
-          </div>
-
-          <fieldset>
-            <legend>Runtime</legend>
-            <div className="switch-grid">
-              {runtimes.map((item) => (
-                <button className={runtime === item.id ? 'choice active' : 'choice'} key={item.id} onClick={() => setRuntime(item.id)} type="button">
-                  <strong>{item.label}</strong>
-                  <small>{item.note}</small>
-                </button>
-              ))}
+    <main className="page">
+      <div className="container compact-container">
+        <header className="hero">
+          <p className="kicker">AnSu v2 · banc observability</p>
+          <div className="hero-grid">
+            <div>
+              <h1>Comparer les traces.</h1>
+              <p className="lead">
+                Runtime fixé sur <strong>LangGraph Python</strong>. On rejoue le même graphe AnSu dans MLflow, Phoenix et Langfuse avec leurs intégrations natives documentées.
+              </p>
             </div>
-          </fieldset>
+            <div className="method-card">
+              <strong>Chemin de preuve</strong>
+              <span>Playground → LangGraph Python configuré → dashboard observability.</span>
+            </div>
+          </div>
+        </header>
 
-          <fieldset>
-            <legend>Observability / eval</legend>
-            <div className="switch-grid">
+        <form className="obs-layout" onSubmit={submit}>
+          <section className="card stack control-card">
+            <SectionTitle step="1" title="Outil à comparer" />
+
+            <div className="choice-grid" role="radiogroup" aria-label="Outil de suivi">
               {observabilities.map((item) => (
-                <button className={observability === item.id ? 'choice active' : 'choice'} key={item.id} onClick={() => setObservability(item.id)} type="button">
+                <button
+                  key={item.id}
+                  className={`choice ${observability === item.id ? 'choice-active' : ''}`}
+                  type="button"
+                  onClick={() => selectObservability(item.id)}
+                >
                   <strong>{item.label}</strong>
-                  <small>{item.note}</small>
+                  <span>{item.endpoint}</span>
                 </button>
               ))}
             </div>
-          </fieldset>
 
-          <label className="field inline">
-            <span>Mode runtime</span>
-            <select value={mode} onChange={(event) => setMode(event.target.value as 'mock' | 'real')}>
-              <option value="mock">mock / stable</option>
-              <option value="real">real / provider</option>
-            </select>
-          </label>
-
-          <fieldset>
-            <legend>LLM gateway / model</legend>
-            <div className="switch-grid">
-              {llmPresets.map((item) => (
-                <button className={llmGateway === item.gateway && llmModel === item.model ? 'choice active' : 'choice'} key={`${item.gateway}:${item.model}`} onClick={() => selectLlmPreset(item)} type="button">
-                  <strong>{item.label}</strong>
-                  <small>{item.note}</small>
-                </button>
-              ))}
+            <div className="runtime-strip">
+              <span>Runtime de référence</span>
+              <strong>LangGraph Python</strong>
+              <code>{selectedObs.endpoint}</code>
             </div>
-          </fieldset>
 
-          <div className="two-cols">
-            <label className="field"><span>Gateway</span><select value={llmGateway} onChange={(event) => setLlmGateway(event.target.value as LlmGateway)}>
-              <option value="mock">mock</option>
-              <option value="albert">albert</option>
-              <option value="mistral">mistral</option>
-              <option value="openai-compatible">openai-compatible</option>
-            </select></label>
-            <label className="field"><span>Model</span><input value={llmModel} onChange={(event) => setLlmModel(event.target.value)} /></label>
-          </div>
+            <p className="note">{selectedObs.description}</p>
 
-          <div className="two-cols">
-            <label className="field"><span>Niveau</span><input value={niveauScolaire} onChange={(event) => setNiveauScolaire(event.target.value)} /></label>
-            <label className="field"><span>Matière</span><input value={matiere} onChange={(event) => setMatiere(event.target.value)} /></label>
-          </div>
-          <label className="field"><span>Notion</span><input value={notion} onChange={(event) => setNotion(event.target.value)} /></label>
-          <label className="field"><span>Posture</span><textarea rows={3} value={posture} onChange={(event) => setPosture(event.target.value)} /></label>
-          <label className="field"><span>Interdits pédagogiques</span><textarea rows={3} value={interdits} onChange={(event) => setInterdits(event.target.value)} /></label>
-        </section>
+            <label className="field">
+              <span>Modèle demandé</span>
+              <select value={llmGateway} onChange={(event) => selectModel(event.target.value as LlmGateway)}>
+                {llmPresets.map((item) => <option key={item.gateway} value={item.gateway}>{item.label}</option>)}
+              </select>
+            </label>
 
-        <section className="panel chat-panel">
-          <div className="panel-title">
-            <span>02</span>
-            <h2>Tour élève</h2>
-          </div>
+            <label className="field">
+              <span>Nom exact du modèle</span>
+              <input value={llmModel} onChange={(event) => setLlmModel(event.target.value)} />
+            </label>
+          </section>
 
-          <div className="two-cols">
-            <label className="field"><span>Session</span><input value={sessionId} onChange={(event) => setSessionId(event.target.value)} /></label>
-            <label className="field"><span>User</span><input value={userId} onChange={(event) => setUserId(event.target.value)} /></label>
-          </div>
+          <section className="card stack scenario-card">
+            <SectionTitle step="2" title="Scénario AnSu" />
 
-          <label className="field message-field">
-            <span>Message élève</span>
-            <textarea rows={7} value={message} onChange={(event) => setMessage(event.target.value)} />
-          </label>
+            <label className="field">
+              <span>Scénario</span>
+              <select value={scenarioId} onChange={(event) => selectScenario(event.target.value as ScenarioId)}>
+                {scenarios.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+            </label>
 
-          <button className="run-button" disabled={loading} type="submit">
-            {loading ? 'Exécution…' : 'Lancer le tour agent'}
-          </button>
+            <label className="field grow-field">
+              <span>Message élève</span>
+              <textarea rows={7} value={message} onChange={(event) => setMessage(event.target.value)} />
+            </label>
 
-          <article className="answer-card">
-            <p className="card-label">Réponse agent</p>
-            {response?.runtime ? <p>{response.runtime.output.answer}</p> : <p className="muted">Aucun tour lancé.</p>}
-          </article>
-        </section>
+            <div className="split">
+              <label className="field">
+                <span>Session</span>
+                <input value={sessionId} onChange={(event) => setSessionId(event.target.value)} />
+              </label>
+              <label className="field">
+                <span>Utilisateur</span>
+                <input value={userId} onChange={(event) => setUserId(event.target.value)} />
+              </label>
+            </div>
 
-        <section className="panel debug-panel">
-          <div className="panel-title">
-            <span>03</span>
-            <h2>Trace & debug</h2>
-          </div>
+            <button className="button" disabled={loading} type="submit">
+              {loading ? 'Trace en cours…' : `Lancer dans ${selectedObs.label}`}
+            </button>
+          </section>
 
-          <div className="metric-row">
-            <Metric label="Score naïveté" value={response?.runtime?.score.score ?? '—'} />
-            <Metric label="Runtime" value={response?.timings ? `${response.timings.runtimeMs} ms` : '—'} />
-            <Metric label="Trace" value={response?.trace?.status ?? '—'} />
-          </div>
+          <section className="card stack result-card">
+            <SectionTitle step="3" title="Preuve" />
 
-          <div className="trace-card">
-            <p className="card-label">Plateforme</p>
-            <strong>{response?.trace?.provider ?? observability}</strong>
-            {response?.trace?.traceId && <code>{response.trace.traceId}</code>}
-            {response?.trace?.url && <a href={response.trace.url} target="_blank" rel="noreferrer">Ouvrir la trace ↗</a>}
-            {response?.trace?.message && <p className="muted">{response.trace.message}</p>}
-          </div>
+            {response?.error ? <div className="error-box">{String(response.error)}</div> : null}
 
-          <details open>
-            <summary>Payload</summary>
-            <pre>{JSON.stringify(payload, null, 2)}</pre>
-          </details>
-          <details>
-            <summary>Réponse brute</summary>
-            <pre>{JSON.stringify(response, null, 2)}</pre>
-          </details>
-        </section>
-      </form>
+            <div className="answer">
+              <span>Réponse agent</span>
+              <p>{response?.runtime?.output.answer ?? 'Aucun test lancé.'}</p>
+            </div>
+
+            <div className="metrics">
+              <Metric label="Score" value={response?.runtime?.score.score ?? '—'} />
+              <Metric label="Runtime" value={response?.runtime?.runtime ?? 'langgraph-python'} />
+              <Metric label="Trace" value={response?.trace?.status ?? '—'} />
+            </div>
+
+            <div className="evidence">
+              <div>
+                <span>Dashboard</span>
+                <strong>{response?.trace?.provider ?? selectedObs.label}</strong>
+              </div>
+              {response?.trace?.traceId ? <code>{response.trace.traceId}</code> : <p className="muted">TraceId en attente.</p>}
+              <div className="link-row">
+                {response?.trace?.url ? <a href={response.trace.url} target="_blank" rel="noreferrer">Ouvrir la trace</a> : null}
+                <a href={selectedObs.dashboard} target="_blank" rel="noreferrer">Ouvrir {selectedObs.label}</a>
+              </div>
+              {response?.trace?.message ? <p className="muted">{response.trace.message}</p> : null}
+            </div>
+
+            <details className="details">
+              <summary>Données techniques</summary>
+              <div className="details-content">
+                <pre>{JSON.stringify({ payload, response }, null, 2)}</pre>
+              </div>
+            </details>
+          </section>
+        </form>
+      </div>
     </main>
   )
 }
 
-function Metric({ label, value }: { label: string; value: string | number }) {
+function SectionTitle({ step, title }: { step: string; title: string }) {
+  return (
+    <div className="section-title">
+      <span>{step}</span>
+      <h2>{title}</h2>
+    </div>
+  )
+}
+
+function Metric({ label, value }: { label: string | number; value: string | number }) {
   return <div className="metric"><span>{label}</span><strong>{value}</strong></div>
 }

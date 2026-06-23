@@ -80,8 +80,15 @@ export async function runMastraRuntime(request: TurnRequest): Promise<RuntimeRes
   return normalizeRuntimeResponse(request, raw, 'mastra')
 }
 
+function langGraphPythonBaseUrl(request: TurnRequest): string {
+  if (request.observability === 'mlflow') return process.env.LANGGRAPH_PY_MLFLOW_API_URL ?? 'http://localhost:3021'
+  if (request.observability === 'phoenix') return process.env.LANGGRAPH_PY_PHOENIX_API_URL ?? 'http://localhost:3022'
+  if (request.observability === 'langfuse') return process.env.LANGGRAPH_PY_LANGFUSE_API_URL ?? 'http://localhost:3023'
+  return process.env.LANGGRAPH_API_URL ?? 'http://localhost:3010'
+}
+
 export async function runLangGraphRuntime(request: TurnRequest): Promise<RuntimeResult> {
-  const base = process.env.LANGGRAPH_API_URL ?? 'http://localhost:3010'
+  const base = langGraphPythonBaseUrl(request)
   const raw = await postJson(`${base}/api/agent`, {
     mode: request.mode === 'real' ? 'langgraph' : 'mock',
     sessionId: request.sessionId,

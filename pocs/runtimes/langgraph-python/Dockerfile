@@ -8,4 +8,4 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY src ./src
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "3010"]
+CMD ["sh", "-c", "uvicorn src.app:app --host 0.0.0.0 --port ${PORT:-3010}"]

@@ -28,3 +28,16 @@ Exemples :
 ```md
 ![B3 — Trace Langfuse lisible](./assets/screenshots/2026-06-23__B3__langfuse__trace-tree__mastra-mistral.png)
 ```
+
+## Index des captures utilisées
+
+### B3 — Traces agentiques
+
+| Outil | Vue | Fichier |
+|---|---|---|
+| MLflow | Liste des traces | `2026-06-23__B3__mlflow__traces-list__langgraph-python-mistral.png` |
+| MLflow | Détail d’une trace | `2026-06-23__B3__mlflow__trace-detail__langgraph-python-mistral.png` |
+| Phoenix | Liste des traces | `2026-06-23__B3__phoenix__traces-list__langgraph-python-mistral.png` |
+| Phoenix | Détail d’une trace | `2026-06-23__B3__phoenix__trace-detail__langgraph-python-mistral.png` |
+| Langfuse | Liste des traces | `2026-06-23__B3__langfuse__traces-list__langgraph-python-mistral.png` |
+| Langfuse | Détail d’une trace | `2026-06-23__B3__langfuse__trace-detail__langgraph-python-mistral.png` |

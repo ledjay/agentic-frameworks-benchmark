@@ -1,0 +1,14 @@
+services:
+  langgraph-typescript-runtime:
+    build: .
+    env_file:
+      - .env
+    environment:
+      PORT: ${PORT:-3014}
+    ports:
+      - "3014:3014"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3014/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12

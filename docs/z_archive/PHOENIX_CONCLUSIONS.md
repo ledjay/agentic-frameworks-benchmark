@@ -1,4 +1,6 @@
 # Conclusions provisoires — Arize Phoenix pour AnSu v2
+> **Statut : archive historique.** Phoenix est repassé en `Non testé` pour la nouvelle grille observability/evals ; ce document est conservé pour mémoire seulement.
+
 
 ## Verdict en une phrase
 
@@ -48,7 +50,7 @@ Lecture :
 Un dossier de test a été créé :
 
 ```txt
-phoenix-langchain/
+pocs/observability/phoenix/
 ```
 
 Il contient :
@@ -62,7 +64,7 @@ Il contient :
 Le dashboard Next.js est dans :
 
 ```txt
-phoenix-langchain/dashboard-next/
+pocs/observability/phoenix/dashboard-next/
 ```
 
 Il démontre :
@@ -243,7 +245,7 @@ Dans le POC Docker, Phoenix utilise SQLite :
 Le volume Docker est :
 
 ```txt
-phoenix-langchain_phoenix-data
+pocs/observability/phoenix_phoenix-data
 ```
 
 Pour la production, Phoenix supporte PostgreSQL via `PHOENIX_SQL_DATABASE_URL` ou variables Postgres dédiées.

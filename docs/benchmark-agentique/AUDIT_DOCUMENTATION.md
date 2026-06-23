@@ -41,12 +41,12 @@ Archives / banque = critères historiques, non décisionnels
 | `docs/benchmark-agentique/fiches/runtime-langgraph-python.md` | Fiche détaillée LangGraph | Partiellement à jour | Bon contenu mais probablement incomplet : la synthèse dit A1-A13 validés, la fiche est courte et mentionne encore Mistral “à tester” sur A3 alors que Mistral tools a été validé. |
 | `docs/z_archive/PHOENIX_CONCLUSIONS.md` | Conclusion Phoenix historique | Archivé | Très riche, mais antérieur au nouveau cadrage traces. À réintégrer plus tard dans une fiche active `docs/benchmark-agentique/fiches/observability-phoenix.md` si nécessaire. |
 | `docs/z_archive/MLFLOW_CONCLUSIONS.md` | Conclusion MLflow historique | Archivé | Très riche, mais antérieur au nouveau cadrage traces. À réintégrer plus tard dans une fiche active `docs/benchmark-agentique/fiches/observability-mlflow.md` si nécessaire. |
-| `phoenix-langchain/EVALUATION.md` | Évaluation POC Phoenix courte | Redondant | Résumé utile mais recoupe `PHOENIX_CONCLUSIONS.md`. Devrait devenir preuve POC ou être absorbé par la fiche Phoenix. |
-| `mlflow-genai/EVALUATION.md` | Évaluation POC MLflow courte | Redondant | Même rôle que ci-dessus côté MLflow. |
-| `phoenix-langchain/README.md` | README POC Phoenix | Bon emplacement | Doit rester opérationnel : comment lancer, ce que ça démontre, limites. |
-| `mlflow-genai/README.md` | README POC MLflow | Bon emplacement | Doit rester opérationnel. |
-| `mastra-runtime/README.md` | README POC Mastra | Bon emplacement | Utile. À vérifier avec état actuel : Mastra et Albert validés ? Observability séparée ? |
-| `phoenix-langchain/dashboard-next/README.md` | README mini dashboard | Bon emplacement | Preuve d’intégration UI. Peut rester POC-local. |
+| `pocs/observability/phoenix/EVALUATION.md` | Évaluation POC Phoenix courte | Redondant | Résumé utile mais recoupe `PHOENIX_CONCLUSIONS.md`. Devrait devenir preuve POC ou être absorbé par la fiche Phoenix. |
+| `pocs/observability/mlflow/EVALUATION.md` | Évaluation POC MLflow courte | Redondant | Même rôle que ci-dessus côté MLflow. |
+| `pocs/observability/phoenix/README.md` | README POC Phoenix | Bon emplacement | Doit rester opérationnel : comment lancer, ce que ça démontre, limites. |
+| `pocs/observability/mlflow/README.md` | README POC MLflow | Bon emplacement | Doit rester opérationnel. |
+| `pocs/runtimes/mastra/README.md` | README POC Mastra | Bon emplacement | Utile. À vérifier avec état actuel : Mastra et Albert validés ? Observability séparée ? |
+| `pocs/observability/phoenix/dashboard-next/README.md` | README mini dashboard | Bon emplacement | Preuve d’intégration UI. Peut rester POC-local. |
 
 ## 3. Problèmes structurels principaux
 
@@ -165,11 +165,11 @@ docs/benchmark-agentique/
     ├── observability-mastra.md         # à créer si testé
     └── evals-promptfoo.md              # à créer si testé
 
-phoenix-langchain/README.md             # README POC local uniquement
-phoenix-langchain/EVALUATION.md         # à absorber ou marquer “preuve POC”
-mlflow-genai/README.md                  # README POC local uniquement
-mlflow-genai/EVALUATION.md              # à absorber ou marquer “preuve POC”
-mastra-runtime/README.md                # README POC local uniquement
+pocs/observability/phoenix/README.md             # README POC local uniquement
+pocs/observability/phoenix/EVALUATION.md         # à absorber ou marquer “preuve POC”
+pocs/observability/mlflow/README.md                  # README POC local uniquement
+pocs/observability/mlflow/EVALUATION.md              # à absorber ou marquer “preuve POC”
+pocs/runtimes/mastra/README.md                # README POC local uniquement
 ```
 
 ## 5. Ordre de lecture recommandé
@@ -186,7 +186,7 @@ mastra-runtime/README.md                # README POC local uniquement
 1. `docs/benchmark-agentique/GRILLE_EVALUATION.md` — méthode.
 2. `QUESTIONS_STRUCTURANTES.md` — questions actives et statuts.
 3. `docs/benchmark-agentique/fiches/*.md` — preuves par outil.
-4. READMEs POC (`mastra-runtime/`, `phoenix-langchain/`, `mlflow-genai/`) — lancement local.
+4. READMEs POC (`pocs/runtimes/mastra/`, `pocs/observability/phoenix/`, `pocs/observability/mlflow/`) — lancement local.
 
 ### Archive / contexte produit
 
@@ -298,7 +298,7 @@ redaction/RBAC dans les docs produit
    - `docs/z_archive/PHOENIX_CONCLUSIONS.md` → `docs/benchmark-agentique/fiches/observability-phoenix.md`
    - `docs/z_archive/MLFLOW_CONCLUSIONS.md` → `docs/benchmark-agentique/fiches/observability-mlflow.md`
 
-8. Garder `phoenix-langchain/EVALUATION.md` et `mlflow-genai/EVALUATION.md` comme preuves POC locales, ou les remplacer par un lien depuis les fiches observability.
+8. Garder `pocs/observability/phoenix/EVALUATION.md` et `pocs/observability/mlflow/EVALUATION.md` comme preuves POC locales, ou les remplacer par un lien depuis les fiches observability.
 
 9. Relire Phoenix/MLflow avec `TRACES_PRIORITAIRES.md` :
    - scores en temps réel ;

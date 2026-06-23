@@ -51,15 +51,15 @@ next-env.d.ts
 
 # Mastra generated state
 .mastra/
-mastra-runtime/.mastra/
-mastra-runtime/data/*.db
-mastra-runtime/data/*.sqlite
-mastra-runtime/data/*.sqlite3
-mastra-runtime/data/*.db-*
+pocs/runtimes/mastra/.mastra/
+pocs/runtimes/mastra/data/*.db
+pocs/runtimes/mastra/data/*.sqlite
+pocs/runtimes/mastra/data/*.sqlite3
+pocs/runtimes/mastra/data/*.db-*
 
 # MLflow / Phoenix local state
-mlflow-genai/mlflow.db
-mlflow-genai/artifacts/
+pocs/observability/mlflow/mlflow.db
+pocs/observability/mlflow/artifacts/
 mlruns/
 artifacts/
 

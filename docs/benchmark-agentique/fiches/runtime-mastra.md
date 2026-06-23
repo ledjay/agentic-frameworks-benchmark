@@ -7,7 +7,7 @@
 - **Outil :** Mastra
 - **Catégorie principale :** A — runtime agentique
 - **Capacité secondaire testée ailleurs :** B — Mastra Observability / Scorers
-- **POC local :** `mastra-runtime/`
+- **POC local :** `pocs/runtimes/mastra/`
 - **Provider de test actuel :** Mistral direct
 - **Provider cible à revalider :** Albert API, reporté à réception de clé
 
@@ -28,7 +28,7 @@ Les questions actives sont dans [`QUESTIONS_STRUCTURANTES.md`](../QUESTIONS_STRU
 | A9 | Le streaming est-il possible sans perdre traces et contrôle ? | À traiter après shortlist | À confirmer | — | — |
 | A10 | Peut-on appliquer des guardrails avant/après réponse ? | À traiter après shortlist | À confirmer | — | — |
 | A11* | Quelle est la DX de câblage ? | Bonne DX POC : déclaration agent lisible, mémoire `thread/resource` simple, scorer déclaratif, multi-agent direct, structured output clair, provider Mistral/Albert centralisé. Points rugueux surtout côté observability/storage (`logs`/`scores` non listables) et nécessité d’une façade AnSu pour normaliser. | Validé POC / vigilance observability | `naive-agent.ts`, `assessment-agent.ts`, `naivety-contract.ts`, `agent/route.ts`, `agent/assess/route.ts` | Validé Jérémie — code très clair |
-| A12* | Le runtime est-il Docker/local reproductible ? | Oui. `task mastra:up` rebuild/lance `mastra-runtime`, `mastra-studio`, `mastra-gateway`; healthcheck sur `/api/agents`; endpoints API, dashboard Next et Studio répondent HTTP 200. Mode réel via `.env` Mistral/Albert, mock disponible sans clé. | Validé POC | `Taskfile.yml`, `docker-compose.yml`, `Dockerfile`, healthchecks HTTP 200 | Validé Jérémie |
+| A12* | Le runtime est-il Docker/local reproductible ? | Oui. `task mastra:up` rebuild/lance `pocs/runtimes/mastra`, `mastra-studio`, `mastra-gateway`; healthcheck sur `/api/agents`; endpoints API, dashboard Next et Studio répondent HTTP 200. Mode réel via `.env` Mistral/Albert, mock disponible sans clé. | Validé POC | `Taskfile.yml`, `docker-compose.yml`, `Dockerfile`, healthchecks HTTP 200 | Validé Jérémie |
 | A13* | Si on remplace Mastra comme runtime, le métier AnSu reste-t-il portable ? | Oui si la façade AnSu reste la frontière. Portables : prompts métier, schémas Zod, `scoreNaivety`, contrat API, provider Albert/Mistral, UI Next. À réimplémenter : `Agent`, `Memory`, `createScorer`, appels `/api/agents/.../generate`, structuredOutput Mastra. Studio/traces/editor sont hors scope runtime et à traiter en catégorie B. | Validé POC / frontière à maintenir | `src/lib/ansu-contract.ts`, `src/lib/model-provider.ts`, façade `/api/agent` | Validé Jérémie |
 
 ## 3. Notes de validation

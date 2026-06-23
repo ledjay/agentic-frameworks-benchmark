@@ -1,4 +1,6 @@
 # Conclusions provisoires — MLflow pour AnSu v2
+> **Statut : archive historique.** MLflow est repassé en `Non testé` pour la nouvelle grille observability/evals ; ce document est conservé pour mémoire seulement.
+
 
 ## Verdict en une phrase
 
@@ -26,7 +28,7 @@ MLflow ≠ couche unique de conformité/recherche
 Un dossier de test a été créé :
 
 ```txt
-mlflow-genai/
+pocs/observability/mlflow/
 ```
 
 Il contient :
@@ -40,7 +42,7 @@ Il contient :
 - spans agent, guardrail, retriever, LLM fake, evaluator ;
 - prompt registry avec prompt master à variables ;
 - évaluation trace-based avec scorer custom ;
-- un mini dashboard Next.js `mlflow-genai/dashboard-next` pour tester la façade AnSu.
+- un mini dashboard Next.js `pocs/observability/mlflow/dashboard-next` pour tester la façade AnSu.
 
 Commandes testées :
 
@@ -267,7 +269,7 @@ Point sécurité à vérifier : le serveur open source local est simple, mais la
 
 ## API et intégration Next
 
-Un mini dashboard Next.js a été câblé dans `mlflow-genai/dashboard-next` et lancé sur `http://localhost:3008`.
+Un mini dashboard Next.js a été câblé dans `pocs/observability/mlflow/dashboard-next` et lancé sur `http://localhost:3008`.
 
 Pages validées : `/`, `/traces`, `/traces/:traceId`, `/prompts`, `/evals`, `/research`.
 

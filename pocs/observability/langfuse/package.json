@@ -1,0 +1,16 @@
+{
+  "name": "ansu-langfuse-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "@langfuse/client": "latest",
+    "@langfuse/otel": "latest",
+    "@langfuse/tracing": "latest",
+    "@opentelemetry/sdk-node": "latest"
+  },
+  "devDependencies": {}
+}

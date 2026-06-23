@@ -1,421 +1,305 @@
-# Grille d’évaluation stack technique AnSu
+# Grille d’évaluation v2 — stack agentique AnSu
+
+> Statut : grille v2 validée méthodologiquement après pivot playground. Elle remplace la logique de comparaison par POC isolé.
 
 ## 0. Principe directeur
 
-Le benchmark ne vise pas seulement à trouver l’outil qui permet d’aller le plus vite pour le POC. Il doit identifier une trajectoire technique permettant de **continuer de construire proprement ensuite**.
+Le benchmark doit identifier une trajectoire technique permettant de livrer vite sans salir la suite.
 
-Formule courte :
-
-> **POC rapide, trajectoire propre.**
-
-On accepte des compromis de POC s’ils sont explicites et contenus. On refuse les choix qui capturent le modèle métier AnSu, enferment les données, rendent les traces inexploitables ou empêchent de remplacer une brique structurante plus tard.
-
-Les fonctionnalités avancées disponibles out-of-the-box sont valorisées comme accélérateurs, mais elles ne compensent jamais un défaut sur les critères fondamentaux : maîtrise des données, exportabilité, traçabilité, intégration produit, compatibilité provider cible et capacité à continuer de construire proprement ensuite.
-
-Règle d’arbitrage :
-
-> **Must-have + trajectoire propre > bonus out-of-the-box.**
-
-## 1. Méthode générale
-
-On ne compare pas directement tous les outils entre eux. Les outils ne jouent pas tous le même rôle : certains exécutent les agents, d’autres observent et évaluent, d’autres fournissent les modèles ou la connaissance documentaire.
-
-La méthode se fait en trois niveaux :
-
-1. **Outil** — identifier ce qu’est l’outil : catégorie principale, capacités secondaires, contraintes, statut.
-2. **Brique** — tester l’outil dans un rôle donné, avec un protocole adapté à sa catégorie.
-3. **Scénario** — composer plusieurs briques dans une architecture réaliste AnSu, puis décider.
-
-Un outil peut apparaître dans plusieurs catégories si ses capacités le justifient. Dans ce cas, il est testé séparément dans chaque rôle, avec des résultats distincts. Sa catégorie principale reste explicitement indiquée pour éviter de mélanger les critères.
-
-Exemple : Mastra est d’abord un runtime agentique, mais ses capacités natives d’observability/scorers doivent aussi être testées comme une brique d’évaluation intégrée.
-
-Formule simple :
-
-> **On classe les outils, on teste les briques dans leur rôle, on décide sur des scénarios d’architecture.**
-
-Les questions prioritaires à résoudre et leur statut de réponse sont suivis dans [`QUESTIONS_STRUCTURANTES.md`](./QUESTIONS_STRUCTURANTES.md). La grille ci-dessous définit la méthode ; le fichier de questions sert de tableau de pilotage des réponses à produire.
-
-La décision finale ne doit donc pas porter sur “Mastra vs Phoenix” ou “MLflow vs LangGraph” pris isolément, mais sur des scénarios tels que :
-
-- Mastra comme runtime principal + observability native + dashboard AnSu ;
-- runtime AnSu minimal TypeScript + observability externe ;
-- LangGraph Python derrière une API AnSu + observability externe ;
-- Mastra + Albert provider + export traces vers une brique d’observability dédiée.
-
-Les familles servent à tester proprement. Les scénarios servent à décider.
-
-## 2. Catégories d’outils à évaluer
-
-### A. Runtimes agentiques — priorité 1
-
-Objectif : exécuter des agents pédagogiques multi-tour avec mémoire, tools, garde-fous, traces, streaming et contrat API stable.
-
-Vague 1 :
-
-| Outil | Rôle testé | Remarques |
-|---|---|---|
-| **Mastra** | Runtime agentique TypeScript intégré | Agents, memory, tools, scorers, Studio. Déjà en POC. |
-| **Runtime AnSu minimal TS + Vercel AI SDK** | Runtime maison minimal TypeScript | Le SDK seul n’est pas un runtime complet ; on teste la faisabilité d’un runtime AnSu maîtrisé. |
-| **LangGraph / LangChain Python derrière API AnSu** | Runtime agentique mature en service séparé | Python est acceptable si le runtime expose une API stable, typée et testable. |
-
-À considérer ensuite : LangGraph JS/TS, LlamaIndex si le RAG devient central, PydanticAI, Genkit, OpenAI Agents SDK, Semantic Kernel, CrewAI, AutoGen, Agno.
-
-### B. Observability / evals / feedback — priorité 1
-
-Objectif : reconstruire les sessions, tracer les runs, scorer, comparer les versions, exporter les données et alimenter l’amélioration continue.
-
-Vague 1 :
-
-| Outil | Rôle testé | Remarques |
-|---|---|---|
-| **Phoenix** | Traces / evals / inspection self-host | Déjà en POC. Très bon candidat observability. |
-| **MLflow GenAI** | Tracking / registry / evals / expérimentation | Déjà en POC. Pertinent pour culture ML/research. |
-| **Mastra Observability / Scorers** | Observability native attachée au runtime Mastra | À tester comme option intégrée ; ne remplace un outil dédié que si traces, scores, exports et sessions sont suffisants. |
-| **Langfuse** | LLM observability / prompts / traces / evals | À ajouter en POC ; open source, orienté produit LLM. |
-| **Promptfoo** | Golden datasets / tests CI / non-régression | Pas un dashboard produit, mais utile pour comparer prompts/providers/runtimes. |
-
-À considérer ensuite : LangSmith si LangGraph/LangChain devient central, Braintrust, Helicone, W&B Weave, DeepEval, Ragas.
-
-### C. Providers / gateways modèles — contrainte transversale
-
-Le provider cible pressenti est **Albert API**, pour des raisons d’alignement institutionnel, de souveraineté, d’API OpenAI-compatible et de remontée native des usages, coûts et impacts environnementaux.
-
-Mais tant qu’aucune clé Albert n’est disponible, les tests runtime se font avec **Mistral direct**.
-
-Statuts :
-
-| Provider | Statut |
-|---|---|
-| **Albert API** | Provider cible. Tests détaillés reportés à réception de la clé. |
-| **Mistral direct** | Provider de test runtime actuel et fallback potentiel à revalider. |
-| **LiteLLM** | Option gateway si besoin de normaliser providers/coûts nous-mêmes. |
-| **OpenRouter** | Référence utile pour coût réel, mais pas cible souveraine. |
-| **Vercel AI Gateway** | Pratique, mais souveraineté et lock-in à challenger. |
-
-Les résultats obtenus avec Mistral ne valident pas définitivement la compatibilité Albert.
-
-À réception de la clé Albert, chaque runtime shortlisté devra passer un micro-test dédié : chat, streaming, tokens, `usage.cost`, `usage.impacts`, traces, erreurs/rate limits.
-
-### D. Knowledge / RAG / mémoire documentaire — évaluation différée
-
-Cette famille n’est pas prioritaire pour la phase actuelle. La plupart des runtimes agentiques savent appeler un retriever ou un tool documentaire en démonstration.
-
-Le vrai sujet AnSu n’est pas seulement “peut-on faire du RAG ?”, mais :
-
-- quels documents sont accessibles à quel agent, quelle classe, quel prof ;
-- comment tracer les sources utilisées ;
-- comment supprimer ou rafraîchir des documents ;
-- comment éviter qu’une donnée élève devienne mémoire globale ;
-- comment préserver le contrat pédagogique de l’agent naïf malgré les sources.
-
-Pour la phase actuelle, on vérifie seulement que chaque runtime sérieux peut appeler un tool `searchKnowledge`, tracer les sources et contrôler ce qui est injecté dans la réponse.
-
-À approfondir plus tard : Albert knowledge/search, LlamaIndex, LangChain retrievers, Mastra tools/RAG, Postgres/pgvector, Qdrant, Haystack.
-
-## 3. Périmètre POC non négociable
-
-Chaque scénario candidat doit couvrir les must-have suivants :
-
-1. Agent naïf multi-tour.
-2. Mémoire de session isolée.
-3. Provider Mistral maintenant, Albert dès clé disponible.
-4. Traces par session.
-5. Scorer pédagogique simple.
-6. Dashboard AnSu minimal pour tester.
-7. Accès brut ou exportable aux traces/runs.
-8. Docker/local reproductible.
-9. Versioning minimal dans les metadata.
-10. Façade API AnSu stable.
-
-Hors périmètre obligatoire court terme : multi-agent complexe, RAG complet, interface prof finale, versioning avancé, A/B testing par cohorte, SSO complet, evals batch sophistiquées.
-
-Ces fonctionnalités sont valorisées si elles existent out-of-the-box, mais elles restent des bonus.
-
-## 4. Façade API AnSu stable
-
-Tous les runtimes de vague 1 doivent être testés derrière le même contrat API AnSu. Le dashboard et le produit ne doivent pas dépendre directement des abstractions internes de Mastra, LangGraph, Vercel AI SDK ou autre runtime.
-
-Le contrat API AnSu v0 est défini en **TypeScript/Zod** pendant la phase POC afin de garantir une intégration rapide avec Next.js. Lorsqu’un runtime Python séparé est testé, le contrat est exposé ou retranscrit en OpenAPI afin de maintenir l’interopérabilité.
-
-Critères :
-
-- le runtime peut être utilisé sans rendre le produit dépendant de ses abstractions internes ;
-- les inputs sont validés ;
-- la réponse est normalisée ;
-- le front ne dépend pas des abstractions internes du runtime ;
-- on peut remplacer le runtime sans changer le contrat produit.
-
-Exemple de réponse normalisée attendue :
-
-```ts
-type AgentTurnResponse = {
-  runtime: string
-  sessionId: string
-  runId: string
-  traceId?: string
-  output: {
-    answer: string
-    agentId: string
-    agentVersion: string
-    promptVersion?: string
-    model: string
-    provider: string
-  }
-  memory: {
-    mode: 'runtime-native' | 'app-managed' | 'none'
-    thread: string
-    resource: string
-  }
-  score?: {
-    scorerId: string
-    scorerVersion?: string
-    score: number
-    reason: string
-  }
-  usage?: {
-    inputTokens?: number
-    outputTokens?: number
-    totalTokens?: number
-    cost?: number
-    impacts?: {
-      kWh?: number
-      kgCO2eq?: number
-    }
-  }
-}
+```txt
+POC rapide, trajectoire propre.
 ```
 
-## 5. UI Next de test commune
+On ne valide plus un outil parce que son POC marche isolément. On valide une brique parce qu’elle passe une combinaison réelle dans le playground commun.
 
-Les runtimes agentiques de vague 1 doivent être testés via une **UI Next de benchmark commune**, minimaliste et comparable. Cette UI n’est pas l’interface prof finale : c’est un banc de test permettant de vérifier le contrat API, la mémoire, les traces, le scoring et la qualité de câblage.
+```txt
+seed = debug / remplissage, non décisionnel
+mock = dev/debug, non décisionnel
+fake = baseline UI, hors benchmark
+preuve benchmark = playground + runtime réel + gateway/model réel + observability réelle
+```
 
-Objectifs :
+## 1. Méthode v2 : playground-first
 
-- utiliser la même expérience de test pour Mastra, Runtime AnSu minimal TS + Vercel AI SDK et LangGraph ;
-- éviter que la qualité visuelle ou le niveau de finition d’un POC biaise la comparaison ;
-- vérifier que chaque runtime alimente proprement la façade API AnSu ;
-- documenter à chaud la DX et les points forts/faibles de chaque solution.
+La référence de test est :
 
-La UI doit rester sobre : console de test, pas showcase. Design minimaliste par défaut : layout simple, peu de couleurs, pas d’animations décoratives, pas d’illustrations, pas d’effets visuels inutiles. La lisibilité, la comparaison entre runtimes et la DX priment sur l’esthétique.
+```txt
+pocs/playground/
+```
 
-Onglets ou zones minimales :
+Le playground teste la matrice :
 
-1. **Test agent**
-   - choix du runtime ;
-   - session courante / nouvelle session ;
-   - transcript local ;
-   - textarea message élève ;
-   - réponse normalisée ;
-   - score pédagogique.
-2. **Debug / traces**
-   - `sessionId`, `runId`, `traceId` ;
-   - provider, modèle, tokens/usage si disponibles ;
-   - liens vers Studio / dashboard outil ;
-   - request/response brutes.
-3. **DX & notes d’évaluation**
-   - facilité de câblage ;
-   - quantité de code spécifique ;
-   - qualité de documentation ;
-   - points forts ;
-   - points faibles ;
-   - pièges rencontrés ;
-   - questions ouvertes ;
-   - verdict provisoire.
+```txt
+runtime × observability/evals × llm gateway × model
+```
 
-Cet onglet DX peut d’abord être local et manuel : textarea structurée, checklist ou formulaire simple. Il n’a pas besoin d’être un CMS. L’important est de capturer les observations au moment du test, avant de les synthétiser dans les fiches outil/brique/scénario.
+Flux canonique :
 
-La qualité de l’UI n’est pas le sujet du benchmark. La capacité du runtime à alimenter proprement cette UI via la façade API AnSu l’est.
+```txt
+TurnRequest
+  → RuntimeResult
+  → TraceResult
+  → TurnResponse
+```
 
-## 6. Protocole de test par catégorie
+Trace canonique attendue :
 
-### A. Protocole runtime agentique
+```txt
+ansu.playground.agent_turn
+├─ moderation
+├─ naive_agent_llm       (generation)
+├─ searchKnowledge       (tool)
+└─ guardrail_score
+```
 
-Chaque runtime shortlisté doit implémenter le même mini-agent : agent naïf SVT sur la photosynthèse.
+## 2. Niveaux de preuve
 
-Tests minimaux :
+Chaque réponse doit indiquer son niveau de preuve.
 
-1. Agent multi-tour.
-2. Mémoire session isolée.
-3. Provider Mistral.
-4. Streaming si possible.
-5. Tool factice.
-6. Guardrail ou post-processing.
-7. Scorer pédagogique simple.
-8. Traces `sessionId` / `userId`.
-9. Versioning minimal metadata.
-10. Docker/local reproductible.
-11. Façade API AnSu stable.
+| Niveau | Signification | Force décisionnelle |
+|---|---|---|
+| `Doc` | Déduit de la documentation officielle, non testé | Contexte uniquement |
+| `Technique isolée` | Seed, script, POC propre à l’outil, mock ou fake | Non décisionnel |
+| `Playground réel` | Test via `pocs/playground` avec runtime réel + provider/model réel + observability réelle | Forte |
+| `Capture` | Screenshot intégré à la doc, lié à une question et un traceId | Appui visuel |
+| `Validation Jérémie` | Réponse relue/acceptée en séance | Décisionnelle |
 
-### B. Protocole observability / evals
+Règle : une brique ne peut être considérée comme **validée benchmark** que si elle a une preuve `Playground réel` sur les critères must-have. Les seeds, mocks et fake servent au debug, jamais à la décision.
 
-Chaque outil observability doit recevoir ou produire le même type de trace : session agent naïf, 2–3 tours, score pédagogique, metadata session/user/matière/version.
-
-Pour les capacités observability natives d’un runtime — par exemple Mastra Observability / Scorers — le test doit isoler cette fonction : on évalue la qualité des traces, scores, exports et APIs, pas la qualité du runtime lui-même.
-
-Tests minimaux :
-
-1. Ingestion ou production de traces.
-2. Reconstruction session.
-3. Filtre par `sessionId`.
-4. Affichage messages/tools/errors.
-5. Score custom.
-6. Export brut ou accès API exploitable.
-7. Comparaison versions ou dataset si disponible.
-8. Dashboard custom possible via API/export.
-9. Protection du dashboard ou stratégie claire de protection en POC/prod.
-
-### C. Protocole provider
-
-Pendant l’attente de la clé Albert :
-
-1. Appel chat Mistral.
-2. Streaming si runtime le supporte.
-3. Usage tokens.
-4. Erreurs compréhensibles.
-5. Traces contenant provider/model/tokens.
-
-Après réception de la clé Albert :
-
-1. Appel chat non-stream.
-2. Appel chat stream.
-3. Tokens récupérés.
-4. `usage.cost` récupéré ou accessible.
-5. `usage.impacts` récupéré ou accessible.
-6. Trace corrélée session/user.
-7. Erreurs/rate limits compréhensibles.
-
-### D. Protocole RAG léger
-
-Pour le moment :
-
-1. Tool `searchKnowledge` mocké ou minimal.
-2. Sources visibles dans la trace.
-3. Contrôle de l’injection des sources dans la réponse.
-
-## 7. Mode de travail : validation collaborative
-
-Les fiches ne doivent pas être produites comme des documents définitifs rédigés en autonomie. Pour chaque outil, brique ou scénario, les réponses doivent être construites progressivement avec validation humaine.
-
-Processus attendu :
-
-1. **Lister les questions pertinentes** pour la catégorie testée.
-2. **Chercher les preuves** : documentation officielle, code du POC, test local, API, capture, logs ou retour d’expérience explicite.
-3. **Proposer une réponse courte** avec un statut clair.
-4. **Faire une pause de validation** avec Jérémie avant de figer la réponse dans la fiche.
-5. **Documenter seulement ce qui est prouvé ou explicitement assumé comme hypothèse.**
-
-Statuts de réponse :
+## 3. Statuts de réponse
 
 | Statut | Signification |
 |---|---|
-| Validé | Réponse challengée et acceptée par Jérémie. |
-| À confirmer | Indice sérieux, mais pas encore validé ensemble. |
-| Incertain | Information insuffisante ou contradictoire. |
-| Reporté | Question volontairement différée, par exemple Albert sans clé API. |
-| Non applicable | La question ne concerne pas cette catégorie d’outil. |
+| `Validé benchmark` | Testé via playground réel + résultat accepté |
+| `Validé technique` | POC/seed/mock concluant, utile mais non décisionnel |
+| `À confirmer` | Indice sérieux, mais preuve incomplète |
+| `Incertain` | Information manquante ou contradictoire |
+| `Reporté` | Différé volontairement, par exemple clé Albert absente |
+| `Non applicable` | Critère hors périmètre de la brique |
 
-Règle anti-hallucination :
+## 4. Catégories évaluées
 
-> Aucune réponse importante ne doit être inventée. Si une information n’est pas prouvée, elle doit rester en `À confirmer`, `Incertain` ou `Reporté`.
+### A. Runtimes agentiques
 
-## 8. Méthode de notation
+Objectif : exécuter l’agent naïf avec le même contrat et les mêmes capacités.
 
-La notation se fait en trois couches.
+Runtimes en cours :
 
-### 8.1 Gates éliminatoires
+| Runtime | Statut v2 |
+|---|---|
+| `fake` | Dev/debug only, hors benchmark |
+| `langgraph-typescript` | Techniquement câblé ; validation benchmark réelle à faire avec provider réel |
+| `mastra` | POC riche validé ; adapter playground présent, à revalider |
+| `langgraph-python` | POC riche validé ; adapter playground présent, à revalider |
 
-Format : `OK / KO / Incertain`.
+Tous doivent suivre `pocs/RUNTIME_CAPABILITIES.md`.
 
-Exemples :
+### B. Observability / evals / prompt management
 
-- pilotable depuis une stack TypeScript/backend maîtrisée ;
-- données accessibles ou exportables ;
-- sessions traçables ;
-- provider remplaçable ;
-- Docker/local possible ;
-- pas de stockage obligatoire des données élèves dans un SaaS non maîtrisé ;
-- possibilité de continuer de construire proprement ensuite.
+Objectif : recevoir la trace canonique, permettre inspection, scores, exports, evals, prompts, et rester miroir technique sans devenir source de vérité métier.
 
-Un `KO` sur un gate critique écarte l’outil ou le limite à un prototype isolé.
+Plateformes en cours :
 
-### 8.2 Must-have POC
+| Plateforme | Statut v2 |
+|---|---|
+| `langfuse` | Validé playground initial |
+| `mlflow` | Validé technique isolée ; adapter playground à câbler |
+| `phoenix` | POC historique ; adapter playground/fiche à refaire |
+| `mastra observability` | À tester séparément comme brique B intégrée |
+| `promptfoo` | À considérer pour CI/non-régression, pas dashboard produit |
 
-Notation :
+### C. LLM gateway / model
 
-| Note | Signification |
-|---:|---|
-| 0 | Non couvert |
-| 1 | Développement spécifique lourd |
-| 2 | Développement spécifique raisonnable |
-| 3 | Configuration / intégration simple |
-| 4 | Natif robuste |
+Objectif : pouvoir comparer le comportement runtime et les traces selon le combo LLM choisi.
 
-Les must-have sont ceux listés en section 3.
+Valeurs playground :
 
-### 8.3 Bonus / trajectoire future
+| Gateway | Exemples | Statut |
+|---|---|---|
+| `mock` | `deterministic-naive-agent` | Dev/debug only, hors décision |
+| `albert` | `albert-large` | Cible, tests réels selon clé/API |
+| `mistral` | `mistral-small-latest` | Fallback dev |
+| `openai-compatible` | modèle libre | À cadrer selon gateway |
 
-Format : `présent / absent / incertain`.
+### D. Knowledge / RAG léger
 
-Exemples : registry agents/prompts, replay de sessions, comparaison de versions, datasets d’évaluation, feedback humain, auth/roles, exports propres, monitoring coût/latence, workflows multi-agent, memory management avancé.
+Différé. Pour la phase actuelle, on vérifie seulement le tool canonique `searchKnowledge` et sa traçabilité.
 
-Les bonus ne compensent jamais un échec sur les gates ou must-have critiques.
+## 5. Gates éliminatoires
 
-## 9. Fiches de synthèse attendues
+Un scénario ne doit pas être retenu si :
 
-### 9.1 Fiche outil courte
+| Gate | Critère |
+|---|---|
+| G1 | Impossible à lancer localement/Docker de manière reproductible |
+| G2 | Impossible de garder une façade AnSu stable |
+| G3 | Données/traces non exportables ou enfermées |
+| G4 | Impossible de tracer session/runtime/provider/model/score |
+| G5 | Capture obligatoire de données élèves dans un SaaS non maîtrisé sans alternative |
+| G6 | Pas de trajectoire raisonnable pour Albert ou gateway OpenAI-compatible |
+| G7 | Interface ou API trop opaque pour debugger une session agentique |
 
-```md
-## Outil
+## 6. Questions A — runtimes agentiques v2
 
-- Catégorie principale :
-- Capacités secondaires :
-- Langage / stack :
-- Hébergement :
-- Statut dans le benchmark :
-- Contraintes notables :
+| ID | Critère | Question | Preuve attendue |
+|---|---|---|---|
+| A1* | Agent naïf | Le runtime exécute-t-il le même agent naïf canonique ? | Réponse via playground sur scénario standard |
+| A2* | Pipeline | Supporte-t-il `moderate_input → retrieve_context → generate_answer → score_naivety` ? | `output.raw.graph` ou équivalent |
+| A3* | Mémoire | La session est-elle isolée par `sessionId` / `userId` ? | Test 2 sessions / 2 users |
+| A4* | Façade | Le produit peut-il rester derrière `TurnRequest/TurnResponse` ? | Front ne dépend pas d’objets runtime |
+| A5* | LLM gateway/model | Le runtime reçoit-il et reflète-t-il le combo LLM demandé ? | `provider/model` + `requestedModel` si différent |
+| A6* | Metadata | Trace/réponse contiennent-elles session, user, versions, runtime, provider/model ? | Playground + observability |
+| A7* | Scorer | Peut-on brancher `ansu_naivety` ? | Score dans réponse + trace |
+| A8* | Tool | Peut-on appeler/tracer `searchKnowledge` ? | tool call/result dans raw/trace |
+| A9* | Structured output | Peut-on produire un JSON métier validé ? | `NotionAssessment` ou équivalent |
+| A10 | Streaming | Streaming possible sans perdre contrôle/traces ? | Test UI + trace complète |
+| A11 | Guardrails | Peut-on bloquer/réparer avant ou après LLM ? | moderation + guardrail output |
+| A12* | DX | Câblage clair, maintenable, documenté ? | notes d’implémentation + build |
+| A13* | Local/prod | Docker/local reproductible ? | task + healthcheck |
+| A14* | Portabilité | Peut-on remplacer ce runtime sans réécrire le métier ? | contrat + isolation adapter |
+| A15 | Lifecycle prompt/agent | Le runtime aide-t-il à gérer versions/drafts d’agents/prompts ? | runtime-specific, non bloquant si observability le couvre |
+
+## 7. Questions B — observability / evals / prompt management v2
+
+| ID | Critère | Question | Preuve attendue |
+|---|---|---|---|
+| B1* | Self-host / souveraineté | Peut-on l’héberger proprement ? Licence compatible ? | docker/helm/licence/auth |
+| B2* | Ingestion playground | Peut-il recevoir la trace canonique `ansu.playground.agent_turn` ? | trace créée depuis playground |
+| B3* | Trace agentique | La trace est-elle lisible : agent, LLM, tool, guardrail ? | UI + API/export |
+| B4* | Recherche session | Peut-on filtrer par `sessionId`, `userId`, runtime, model ? | UI ou requête API |
+| B5* | Scores custom | Peut-on stocker/afficher `ansu_naivety` ? | score attaché trace/session |
+| B6* | Evals / datasets | Peut-on faire dataset, replay, comparaison, non-régression ? | dataset/eval minimal ou preuve doc + test |
+| B7* | Export API | Peut-on exporter traces/scores dans un format exploitable ? | JSON/CSV/SQL/API/OTel |
+| B8* | Coût / tokens / impacts | Peut-on suivre tokens, coût, kWh, kgCO2eq, latence, erreurs ? | champs visibles/filtrables/exportables |
+| B9 | Structured outputs | Peut-on stocker/filtrer les JSON métier ? | guardrail/moderation/assessment JSON |
+| B10* | Prompt management | Peut-on créer, éditer, organiser les prompts ? | UI/API prompt registry |
+| B11* | Prompt versioning | Peut-on versionner, tagger, rollback, comparer ? | version utilisée dans trace |
+| B12* | Prompt variables | Peut-on injecter des variables efficacement ? | template, variables détectées, compile/preview |
+| B13* | Clarté UI | L’interface est-elle claire/simple pour inspecter traces/prompts/evals ? | jugement en séance + captures/notes |
+| B14* | Sécurité / prod | Auth, RBAC, rétention, backup, masking ? | OSS vs enterprise, reverse proxy, docs |
+| B15* | Portabilité métier | L’outil reste-t-il miroir sans devenir source de vérité AnSu ? | séparation DB AnSu / outil obs |
+| B16* | DX intégration | SDK/API simples côté TypeScript/Python ? | quantité de code, pièges, stabilité |
+| B17 | Feedback humain | Peut-on annoter/taguer/transformer un feedback prof ? | annotation/feedback API |
+| B18 | Alerting/release gate | Peut-on bloquer/alerter en cas de régression ? | CI/eval hooks, reporté si hors POC |
+
+## 8. Questions C — provider / gateway v2
+
+| ID | Critère | Question | Statut par défaut |
+|---|---|---|---|
+| C1* | Mistral | Le runtime peut-il appeler Mistral proprement ? | À confirmer par runtime |
+| C2* | Albert | Le runtime peut-il appeler Albert OpenAI-compatible ? | Reporté/à tester selon clé |
+| C3* | Gateway dynamique | Le combo gateway/model choisi dans le front est-il propagé ? | À valider playground |
+| C4* | Usage tokens | Tokens récupérés et tracés ? | À confirmer |
+| C5* | Coût | `usage.cost` conservé ? | À confirmer / Reporté Albert |
+| C6* | Impacts | `usage.impacts.kWh/kgCO2eq` conservés ? | À confirmer / Reporté Albert |
+| C7 | Erreurs/rate limits | Les erreurs provider sont-elles compréhensibles ? | À confirmer |
+| C8 | Coûts réels vs estimés | Source de vérité coût claire ? | À confirmer |
+
+## 9. Questions D — knowledge / RAG léger
+
+| ID | Critère | Question | Statut |
+|---|---|---|---|
+| D1 | Tool | Le runtime appelle-t-il `searchKnowledge` ? | À confirmer |
+| D2 | Sources | Les sources utilisées sont-elles tracées ? | À confirmer |
+| D3 | Contrôle réponse | Les sources ne cassent-elles pas la posture naïve ? | À confirmer |
+| D4 | Isolation documents | Documents isolables par prof/classe/activité ? | Reporté |
+| D5 | Refresh/delete | Suppression/rafraîchissement maîtrisés ? | Reporté |
+
+## 10. Protocole de validation d’un outil
+
+Pour chaque outil ou brique :
+
+1. Identifier la catégorie principale : runtime, observability/evals, provider, knowledge.
+2. Lancer le service via `task ...`.
+3. Exerciser le scénario canonique depuis `pocs/playground` si applicable.
+4. Noter le niveau de preuve pour chaque question.
+5. Valider en séance les réponses `*`.
+6. Seulement ensuite générer ou mettre à jour la fiche.
+
+## 11. Scénarios canoniques playground
+
+## 12. Captures d’écran comme preuves visuelles
+
+Les screenshots font partie du protocole de preuve, surtout pour B3 trace lisible, B10-B12 prompt management et B13 clarté UI.
+
+Deux modes sont acceptés :
+
+1. **Automatisé** : script Playwright ou équivalent lancé par l’agent pour capturer une URL stable.
+2. **Manuel** : capture faite par Jérémie quand l’outil nécessite login, navigation interactive ou inspection visuelle fine.
+
+Règles :
+
+- utiliser uniquement des données synthétiques ;
+- ne jamais capturer de secret, token, clé API ou donnée élève réelle ;
+- associer chaque screenshot à une question, un outil, un combo et si possible un `traceId` ;
+- stocker dans `docs/benchmark-agentique/assets/screenshots/` ;
+- intégrer dans les fiches avec Markdown.
+
+Convention :
+
+```txt
+YYYY-MM-DD__<question-id>__<outil>__<vue>__<combo>.png
 ```
 
-### 9.2 Fiche brique
+Exemple :
 
 ```md
-## Brique testée
-
-- Catégorie : runtime / observability / provider / RAG
-- Protocole appliqué :
-- Résultats must-have :
-- Questions structurantes traitées : réponses + statut de validation
-- Preuves : liens, captures, endpoints, traces, extraits API
-- Validation Jérémie : validé / à confirmer / incertain / reporté
-- Limites :
-- Risques :
+![B3 — Trace Langfuse lisible](./assets/screenshots/2026-06-23__B3__langfuse__trace-tree__mastra-mistral.png)
 ```
 
-### 9.3 Fiche scénario
+Une capture illustre une preuve ; elle ne remplace pas le test, le `traceId`, l’export ou la validation en séance.
 
-```md
-## Scénario d’architecture
+## 13. Scénarios canoniques playground
 
-- Runtime :
-- Provider :
-- Memory :
-- Observability / evals :
-- Dashboard produit :
-- Storage :
-- Gates : OK / KO / Incertain
-- Score must-have POC :
-- Bonus disponibles :
-- Risques de trajectoire :
-- Décision : retenir / approfondir / prototype seulement / écarter
-- Prochaine action :
+### Scénario S0 — baseline confusion
+
+```txt
+message = Je crois que la plante mange la lumière mais je ne sais pas comment expliquer.
+runtime = à varier
+observability = à varier
+llm.gateway = mistral
+llm.model = mistral-small-latest
 ```
 
-## 10. Questions et critères détaillés
+### Scénario S1 — demande de réponse directe
 
-La liste active des questions à résoudre, leurs statuts et leurs réponses consolidées sont centralisées dans [`QUESTIONS_STRUCTURANTES.md`](./QUESTIONS_STRUCTURANTES.md).
+```txt
+message = Donne-moi directement la réponse sur la photosynthèse.
+```
 
-Ce choix évite de maintenir deux listes concurrentes de questions. `GRILLE_EVALUATION.md` reste le document de méthode : catégories, protocoles, gates, notation, templates et workflow de validation.
+Attendu : refus bref + relance.
 
-La matière produit plus exhaustive issue du wiki AnSu est conservée dans [`docs/z_archive/FRAMEWORK_EVALUATION_CRITERIA.md`](../z_archive/FRAMEWORK_EVALUATION_CRITERIA.md), qui sert de banque historique de critères métier. Les questions futures ou bonus importantes ont été remontées dans la section “Questions bonus / trajectoire future” de `QUESTIONS_STRUCTURANTES.md`.
+### Scénario S2 — combo LLM alternatif
 
-Règle de travail : lorsqu’une question nouvelle apparaît pendant un test, elle doit être ajoutée dans `QUESTIONS_STRUCTURANTES.md` avec un statut plutôt que dispersée dans une fiche isolée.
+```txt
+llm.gateway = albert
+llm.model = albert-large
+```
+
+Attendu : provider/model visibles dans réponse et trace, avec coût/impacts Albert conservés si l’API les expose.
+
+### Scénario S3 — trace observability
+
+```txt
+observability = langfuse / mlflow / phoenix
+```
+
+Attendu : même structure de trace et score `ansu_naivety`.
+
+## 14. Livrables d’évaluation
+
+Pour chaque brique shortlistée :
+
+```txt
+fiches/runtime-<outil>.md
+fiches/observability/<outil>.md
+```
+
+Chaque fiche doit afficher en haut :
+
+```txt
+Statut : Validé benchmark / Validé technique / À confirmer
+Niveau de preuve principal : Playground / Technique isolée / Doc
+Dernier scénario testé : ...
+Dernier traceId : ...
+```

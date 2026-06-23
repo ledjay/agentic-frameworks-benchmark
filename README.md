@@ -24,9 +24,9 @@ Le benchmark ne cherche pas seulement un chatbot. Il cherche une trajectoire pou
 | [`docs/benchmark-agentique/QUESTIONS_STRUCTURANTES.md`](./docs/benchmark-agentique/QUESTIONS_STRUCTURANTES.md) | Tableau de pilotage des questions à résoudre, avec statuts et liens vers les preuves/fiches. |
 | [`docs/benchmark-agentique/SYNTHESE_RUNTIME.md`](./docs/benchmark-agentique/SYNTHESE_RUNTIME.md) | Synthèse provisoire des runtimes agentiques et décision Mastra à challenger. |
 | [`docs/z_archive/FRAMEWORK_EVALUATION_CRITERIA.md`](./docs/z_archive/FRAMEWORK_EVALUATION_CRITERIA.md) | Ancienne grille produit détaillée, conservée comme banque de critères métier. |
-| [`PHOENIX_CONCLUSIONS.md`](./docs/z_archive/PHOENIX_CONCLUSIONS.md) | Conclusions provisoires sur Arize Phoenix. |
-| [`MLFLOW_CONCLUSIONS.md`](./docs/z_archive/MLFLOW_CONCLUSIONS.md) | Conclusions provisoires sur MLflow. |
-| [`mastra-runtime/README.md`](./mastra-runtime/README.md) | POC Mastra runtime + Next + Studio/evals/observability. |
+| [`docs/z_archive/PHOENIX_CONCLUSIONS.md`](./docs/z_archive/PHOENIX_CONCLUSIONS.md) | Archive historique Phoenix, non utilisée comme validation de la nouvelle grille observability/evals. |
+| [`docs/z_archive/MLFLOW_CONCLUSIONS.md`](./docs/z_archive/MLFLOW_CONCLUSIONS.md) | Archive historique MLflow, non utilisée comme validation de la nouvelle grille observability/evals. |
+| [`pocs/runtimes/mastra/README.md`](./pocs/runtimes/mastra/README.md) | POC Mastra runtime + Next + Studio/evals/observability. |
 
 ## Typologie des solutions testées
 
@@ -52,8 +52,8 @@ Vague 1 :
 
 | Brique | Rôle testé | Statut |
 |---|---|---|
-| Phoenix | Traces, annotations, datasets, evals | POC testé |
-| MLflow GenAI | Tracking, registry, trace-based evals | POC testé |
+| Phoenix | Traces, annotations, datasets, evals | Non testé dans la nouvelle grille ; POC historique archivé |
+| MLflow GenAI | Tracking, registry, trace-based evals | Non testé dans la nouvelle grille ; POC historique archivé |
 | Mastra Observability / Scorers | Observability native attachée au runtime Mastra | À tester séparément en catégorie B |
 | Langfuse | LLM observability, prompts, evals | À tester |
 | Promptfoo | Golden datasets, tests CI, non-régression | À tester |
@@ -140,12 +140,14 @@ Les jobs `phoenix-app`, `mlflow-app`, `mlflow-eval` et `mastra-seed` sont volont
 
 ## POC disponibles
 
+> Note : les POC Phoenix et MLflow ci-dessous sont des preuves historiques. Ils ne valent plus validation dans la nouvelle grille observability/evals ; ils devront être repassés avec [`docs/benchmark-agentique/TRACES_PRIORITAIRES.md`](./docs/benchmark-agentique/TRACES_PRIORITAIRES.md).
+
 ### Phoenix + LangChain
 
 Chemin :
 
 ```txt
-phoenix-langchain/
+pocs/observability/phoenix/
 ```
 
 Contenu :
@@ -159,18 +161,18 @@ Contenu :
 Dashboard Next :
 
 ```txt
-phoenix-langchain/dashboard-next/
+pocs/observability/phoenix/dashboard-next/
 http://localhost:3007
 ```
 
-Conclusion courte : Phoenix est très bon pour **observabilité LLM**, **traces**, **datasets**, **evals**, **annotations**, mais ne fournit pas le runtime agentique ni le registry métier AnSu.
+Conclusion historique : Phoenix semblait très bon pour **observabilité LLM**, **traces**, **datasets**, **evals**, **annotations**, mais ne fournit pas le runtime agentique ni le registry métier AnSu.
 
 ### MLflow GenAI
 
 Chemin :
 
 ```txt
-mlflow-genai/
+pocs/observability/mlflow/
 ```
 
 Contenu :
@@ -184,11 +186,11 @@ Contenu :
 Dashboard Next :
 
 ```txt
-mlflow-genai/dashboard-next/
+pocs/observability/mlflow/dashboard-next/
 http://localhost:3008
 ```
 
-Conclusion courte : MLflow est très fort pour **prompt registry**, **trace-based evals**, **MLOps**, **preuve d'impact**, **licence Apache-2.0**, mais ne fournit pas non plus le runtime agentique ni la couche métier AnSu.
+Conclusion historique : MLflow semblait très fort pour **prompt registry**, **trace-based evals**, **MLOps**, **preuve d'impact**, **licence Apache-2.0**, mais ne fournit pas non plus le runtime agentique ni la couche métier AnSu.
 
 
 ### Mastra Runtime + Next
@@ -196,7 +198,7 @@ Conclusion courte : MLflow est très fort pour **prompt registry**, **trace-base
 Chemin :
 
 ```txt
-mastra-runtime/
+pocs/runtimes/mastra/
 ```
 
 Contenu :
@@ -212,13 +214,15 @@ Contenu :
 Dashboard Next :
 
 ```txt
-mastra-runtime/app/
+pocs/runtimes/mastra/app/
 http://localhost:3009
 ```
 
 Conclusion courte : Mastra est le premier POC de la famille **runtime agentique**. Il porte déjà l'agent naïf AnSu avec mémoire native Mastra, scorer, traces et dashboard Next minimal. Il doit encore être évalué sur façade API AnSu normalisée, exportabilité, compat Albert et éventuelle complémentarité avec Phoenix/MLflow/Langfuse.
 
-## État de comparaison rapide
+## État de comparaison rapide historique
+
+> Cette table reflète les observations des anciens POC Phoenix/MLflow/Mastra. Phoenix et MLflow sont repassés en `Non testé` pour la nouvelle grille observability/evals et doivent être revalidés avec `TRACES_PRIORITAIRES.md`.
 
 | Besoin | Phoenix | MLflow | Mastra |
 |---|---|---|---|

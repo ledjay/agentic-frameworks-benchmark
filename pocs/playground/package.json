@@ -1,0 +1,27 @@
+{
+  "name": "ansu-benchmark-playground",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3013",
+    "build": "next build",
+    "start": "next start --port 3013"
+  },
+  "dependencies": {
+    "@langfuse/client": "latest",
+    "@langfuse/otel": "latest",
+    "@langfuse/tracing": "latest",
+    "@opentelemetry/sdk-node": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}

@@ -6,10 +6,12 @@ dotenv:
   - .env
 
 vars:
-  PHOENIX_COMPOSE: docker compose -f phoenix-langchain/docker-compose.yml
-  MLFLOW_COMPOSE: docker compose -f mlflow-genai/docker-compose.yml
-  MASTRA_COMPOSE: docker compose -f mastra-runtime/docker-compose.yml
-  LANGGRAPH_COMPOSE: docker compose -f langgraph-runtime/docker-compose.yml
+  PHOENIX_COMPOSE: docker compose -f pocs/observability/phoenix/docker-compose.yml
+  MLFLOW_COMPOSE: docker compose -f pocs/observability/mlflow/docker-compose.yml
+  MASTRA_COMPOSE: docker compose -f pocs/runtimes/mastra/docker-compose.yml
+  LANGGRAPH_COMPOSE: docker compose -f pocs/runtimes/langgraph-python/docker-compose.yml
+  LANGGRAPH_TS_COMPOSE: docker compose -f pocs/runtimes/langgraph-typescript/docker-compose.yml
+  LANGFUSE_COMPOSE: docker compose --env-file pocs/observability/langfuse/.env -f pocs/observability/langfuse/docker-compose.yml
 
 tasks:
   default:
@@ -23,10 +25,13 @@ tasks:
       - '{{.PHOENIX_COMPOSE}} ps'
       - '{{.MLFLOW_COMPOSE}} ps'
       - '{{.MASTRA_COMPOSE}} ps'
+      - '{{.LANGGRAPH_COMPOSE}} ps'
+      - '{{.LANGGRAPH_TS_COMPOSE}} ps'
+      - '{{.LANGFUSE_COMPOSE}} ps'
 
   up:
-    desc: Start Phoenix, MLflow, Mastra and LangGraph demos
-    deps: [phoenix:up, mlflow:up, mastra:up, langgraph:up]
+    desc: Start legacy demos plus runtime services (playground remains foreground via task playground:dev)
+    deps: [phoenix:up, mlflow:up, mastra:up, langgraph:up, langgraph-ts:up]
     cmds:
       - task urls
 
@@ -60,6 +65,12 @@ tasks:
         ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
         │ LangGph │ FastAPI runtime       │ http://localhost:3010                           │
         │ LangGph │ Health                │ http://localhost:3010/health                    │
+        │ LangGTS │ Node runtime          │ http://localhost:3014                           │
+        │ LangGTS │ Health                │ http://localhost:3014/health                    │
+        ├─────────┼──────────────────────┼─────────────────────────────────────────────────┤
+        │ Langfuse│ UI outil             │ http://localhost:3012                           │
+        │ Langfuse│ Worker health        │ http://localhost:3032/api/health                │
+        │ Playgrd │ Harness benchmark    │ http://localhost:3013                           │
         └─────────┴──────────────────────┴─────────────────────────────────────────────────┘
 
         Pour générer les données : task seed
@@ -91,11 +102,11 @@ tasks:
 
   down:
     desc: Stop all demo services without deleting volumes
-    deps: [phoenix:down, mlflow:down, mastra:down, langgraph:down]
+    deps: [phoenix:down, mlflow:down, mastra:down, langgraph:down, langgraph-ts:down, langfuse:down]
 
   clean:
     desc: Stop all demo services and delete demo volumes
-    deps: [phoenix:clean, mlflow:clean, mastra:clean, langgraph:clean]
+    deps: [phoenix:clean, mlflow:clean, mastra:clean, langgraph:clean, langgraph-ts:clean, langfuse:clean]
 
   phoenix:up:
     desc: Start Phoenix server and its Next dashboard
@@ -167,6 +178,52 @@ tasks:
     cmds:
       - '{{.MLFLOW_COMPOSE}} down -v --remove-orphans'
 
+  langfuse:up:
+    desc: Start Langfuse observability stack
+    dir: .
+    cmds:
+      - '{{.LANGFUSE_COMPOSE}} up --build -d langfuse-web langfuse-worker'
+      - echo "Langfuse UI http://localhost:3012"
+
+  langfuse:seed:
+    desc: Run Langfuse AnSu demo trace
+    dir: pocs/observability/langfuse
+    cmds:
+      - npm install
+      - npm run seed
+
+  langfuse:logs:
+    desc: Follow Langfuse logs
+    dir: .
+    cmds:
+      - '{{.LANGFUSE_COMPOSE}} logs -f langfuse-web langfuse-worker'
+
+  langfuse:down:
+    desc: Stop Langfuse stack without deleting data
+    dir: .
+    cmds:
+      - '{{.LANGFUSE_COMPOSE}} down --remove-orphans'
+
+  langfuse:clean:
+    desc: Stop Langfuse stack and delete volumes
+    dir: .
+    cmds:
+      - '{{.LANGFUSE_COMPOSE}} down -v --remove-orphans'
+
+  playground:dev:
+    desc: Start the shared AnSu benchmark playground
+    dir: pocs/playground
+    cmds:
+      - npm install
+      - npm run dev
+
+  playground:build:
+    desc: Build the shared AnSu benchmark playground
+    dir: pocs/playground
+    cmds:
+      - npm install
+      - npm run build
+
   mastra:up:
     desc: Start Mastra runtime, Studio and Next dashboard
     dir: .
@@ -208,6 +265,32 @@ tasks:
       - echo "LangGraph API    http://localhost:3010"
       - echo "LangGraph health http://localhost:3010/health"
       - echo "LangGraph dashboard http://localhost:3011"
+
+  langgraph-ts:up:
+    desc: Start LangGraph TypeScript runtime
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_TS_COMPOSE}} up --build -d langgraph-typescript-runtime'
+      - echo "LangGraph TS API    http://localhost:3014"
+      - echo "LangGraph TS health http://localhost:3014/health"
+
+  langgraph-ts:logs:
+    desc: Follow LangGraph TypeScript runtime logs
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_TS_COMPOSE}} logs -f langgraph-typescript-runtime'
+
+  langgraph-ts:down:
+    desc: Stop LangGraph TypeScript runtime
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_TS_COMPOSE}} down --remove-orphans'
+
+  langgraph-ts:clean:
+    desc: Stop LangGraph TypeScript runtime and delete volumes
+    dir: .
+    cmds:
+      - '{{.LANGGRAPH_TS_COMPOSE}} down -v --remove-orphans'
 
   langgraph:logs:
     desc: Follow LangGraph runtime logs

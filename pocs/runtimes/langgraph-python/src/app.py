@@ -75,7 +75,7 @@ def setup_observability() -> None:
             print(f"[observability] Phoenix setup failed: {exc}")
 
 
-def build_langfuse_handler(turn: "AgentTurnRequest") -> BaseCallbackHandler | None:
+def build_langfuse_handler(turn: Any) -> BaseCallbackHandler | None:
     if OBSERVABILITY_BACKEND != "langfuse":
         return None
     try:
@@ -155,7 +155,7 @@ def set_native_span_outputs(span: Any, answer: str, score: dict[str, Any]) -> No
         pass
 
 
-def runtime_observability_result(run_id: str, turn: "AgentTurnRequest", handler: BaseCallbackHandler | None = None) -> dict[str, Any]:
+def runtime_observability_result(run_id: str, turn: Any, handler: BaseCallbackHandler | None = None) -> dict[str, Any]:
     if OBSERVABILITY_BACKEND == "none":
         return {"provider": "none", "status": "skipped", "message": "Runtime observability disabled."}
 
@@ -806,7 +806,7 @@ def transcript_to_text(transcript: list[TranscriptMessage]) -> str:
     return "\n".join(f"{item.role}: {item.content}" for item in transcript)
 
 
-def assess_with_structured_output(transcript: list[TranscriptMessage]) -> tuple[NotionAssessment, dict[str, Any]]:
+def assess_with_structured_output(transcript: list[TranscriptMessage], callbacks: list[BaseCallbackHandler] | None = None) -> tuple[NotionAssessment, dict[str, Any]]:
     """Use LangChain native structured output first.
 
     LangChain maps Pydantic schemas to the provider's structured-output/tool
@@ -838,6 +838,7 @@ def assess_with_structured_output(transcript: list[TranscriptMessage]) -> tuple[
         prompt,
         config={
             "run_name": "ansu.langgraph.structured_assessment",
+            "callbacks": callbacks or [],
             "metadata": {
                 "agentId": AGENT_ID,
                 "agentVersion": AGENT_VERSION,
@@ -863,12 +864,15 @@ def assess_with_structured_output(transcript: list[TranscriptMessage]) -> tuple[
 @app.post("/api/agent/assess")
 def assess(request: AssessmentRequest) -> dict[str, Any]:
     details: dict[str, Any]
+    langfuse_handler = build_langfuse_handler(request)
+    callbacks = [langfuse_handler] if langfuse_handler is not None else []
+
     if request.mode == "mock":
         assessment = deterministic_assessment(request.transcript)
         details = {"method": "deterministic", "schema": "NotionAssessment"}
     else:
         try:
-            assessment, details = assess_with_structured_output(request.transcript)
+            assessment, details = assess_with_structured_output(request.transcript, callbacks)
         except Exception as exc:
             # Keep the endpoint usable while exposing native structured-output
             # failures in the response; this fallback is not counted as native
@@ -880,12 +884,25 @@ def assess(request: AssessmentRequest) -> dict[str, Any]:
                 "schema": "NotionAssessment",
                 "nativeError": str(exc),
             }
+
+    if langfuse_handler is not None:
+        try:
+            flush = getattr(langfuse_handler, "flush", None) or getattr(langfuse_handler, "flushAsync", None)
+            if callable(flush):
+                maybe_result = flush()
+                if hasattr(maybe_result, "__await__"):
+                    pass
+        except Exception:
+            pass
+
+    run_id = f"{request.sessionId}:assessment:{int(time.time() * 1000)}"
     return {
         "mode": request.mode,
         "runtime": "langgraph" if request.mode == "langgraph" else "mock",
-        "runId": f"{request.sessionId}:assessment:{int(time.time() * 1000)}",
+        "runId": run_id,
         "assessment": assessment.model_dump(),
         "schemaValidated": True,
         "details": details,
+        "observability": runtime_observability_result(run_id, request, langfuse_handler),
         "note": "Structured output via LangChain with_structured_output quand method=native.",
     }

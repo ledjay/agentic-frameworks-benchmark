@@ -236,15 +236,98 @@ MLflow et Phoenix restent utilisables, mais les scores sont plus difficiles à r
 
 ### B5 — Peut-on stocker et relire les sorties structurées ?
 
-À valider.
+Réponse courte : oui, les trois outils permettent de stocker et relire une sortie structurée. La différence se joue surtout sur la lisibilité dans l’interface.
+
+Le cas testé est une évaluation structurée de transcript, avec un objet `NotionAssessment` contenant notamment :
+
+- les notions évaluées ;
+- le statut de compréhension ;
+- une justification courte ;
+- l’indication `readyForNextStep` ;
+- la méthode de génération / validation.
+
+| Outil | Statut | Synthèse |
+|---|---|---|
+| MLflow | Validé | La sortie structurée est bien stockée et relisible. L’interface permet de retrouver l’objet, mais la lecture reste assez technique. Lisibilité correcte, derrière Langfuse. |
+| Phoenix | Validé, mais moins lisible | La sortie structurée est bien présente, mais elle est moins mise en valeur dans l’interface. La lecture demande plus d’effort, surtout pour une personne non spécialiste de l’outil. |
+| Langfuse | Validé | La sortie structurée est la plus lisible. L’objet est plus facile à retrouver et à comprendre dans le contexte de la trace. C’est l’expérience la plus confortable pour analyser rapidement le résultat métier. |
+
+Classement de lisibilité observé :
+
+```txt
+Langfuse > MLflow > Phoenix
+```
+
+Conclusion B5 :
+
+```txt
+Les trois plateformes savent conserver une sortie structurée.
+Langfuse est le plus lisible pour relire le résultat métier.
+MLflow est exploitable mais plus technique.
+Phoenix fonctionne, mais la lecture est la moins confortable.
+```
 
 ### B6 — Peut-on tracer les tokens, coûts et impacts Albert ?
 
-À valider.
+Réponse courte : les tokens sont correctement visibles dans MLflow et Langfuse. Dans Phoenix, ils ne remontent pas correctement pour le moment, probablement à cause d’un câblage OpenTelemetry à ajuster. Les coûts et impacts Albert sont bien récupérés par le runtime, mais ne sont pas encore affichés clairement dans les dashboards.
+
+| Outil | Statut | Synthèse |
+|---|---|---|
+| MLflow | Partiel, bon sur tokens | Les tokens ressortent correctement dans l’interface. Les champs Albert spécifiques (`cost`, `impacts.kWh`, `impacts.kgCO2eq`) sont récupérés côté runtime, mais doivent être poussés explicitement en metadata custom pour être plus lisibles. |
+| Phoenix | Partiel | Les données existent côté runtime, mais les tokens ne remontent pas correctement dans l’interface pour le moment. C’est probablement un sujet de mapping / câblage OpenTelemetry. Les champs coût et impact devront aussi passer par des attributs custom. |
+| Langfuse | Partiel, bon sur tokens | Les tokens ressortent correctement dans l’interface, au même niveau que MLflow. Les champs coût et impact Albert peuvent être ajoutés via metadata custom, et éventuellement via `usage_details` / `cost_details` pour la partie usage/coût. |
+
+Le câblage coût / impact Albert ne semble pas bloquant. Les trois outils permettent d’ajouter des métadonnées custom :
+
+- MLflow via metadata de trace ou attributs de span ;
+- Langfuse via metadata de trace, span ou génération ;
+- Phoenix via attributs OpenTelemetry.
+
+La difficulté principale n’est donc pas d’envoyer la donnée, mais de la rendre lisible et exploitable dans l’interface.
+
+Niveau de difficulté estimé :
+
+```txt
+Langfuse : facile
+MLflow   : facile à moyen
+Phoenix  : moyen, surtout à cause de la lisibilité dans l’interface
+```
+
+Conclusion B6 :
+
+```txt
+Les tokens sont validés dans MLflow et Langfuse.
+Phoenix devra être recâblé pour afficher correctement les tokens.
+Les coûts et impacts Albert sont récupérés par le runtime, mais doivent être normalisés et poussés comme metadata custom.
+Ce point n’est pas bloquant, mais il avantage MLflow et Langfuse sur la lisibilité.
+```
 
 ### B7 — Peut-on suivre les prompts et leurs versions ?
 
-À valider.
+Réponse courte : oui, les trois plateformes savent gérer des prompts et leur versioning. Sur ce point, Phoenix ressort comme le plus agréable et le plus complet à l’usage.
+
+Le besoin AnSu n’est pas seulement de stocker un texte de prompt. Il faut pouvoir suivre un prompt comme un objet de production :
+
+- retrouver quelle version a été utilisée ;
+- comparer plusieurs versions ;
+- utiliser des variables dans les prompts ;
+- relier une version de prompt aux traces et aux évaluations ;
+- faire évoluer un prompt sans perdre l’historique.
+
+| Outil | Statut | Synthèse |
+|---|---|---|
+| MLflow | Validé | Gère les prompts et le versioning. Solide pour une logique d’expérimentation, de comparaison et de non-régression. L’expérience reste plus orientée engineering. |
+| Phoenix | Validé fort | Sur ce point, Phoenix est le mieux intégré. Son gestionnaire de prompts propose davantage de fonctionnalités et se révèle plus agréable à utiliser que les autres. |
+| Langfuse | Validé | Gère les prompts, le versioning et les variables. L’expérience est claire et cohérente avec le reste de l’outil, mais moins riche que Phoenix sur ce point précis. |
+
+Conclusion B7 :
+
+```txt
+Les trois plateformes savent gérer les prompts et leur versioning.
+Phoenix est le meilleur sur la gestion de prompts : plus complet et plus agréable à utiliser.
+MLflow est solide mais plus orienté engineering.
+Langfuse est clair et bien intégré, mais moins avancé que Phoenix sur ce point.
+```
 
 ### B8 — Peut-on exporter les données et éviter le lock-in ?
 

@@ -54,21 +54,29 @@ const scenarios = [
   }
 ] as const
 
+const defaultTranscript = `user: Je crois que la plante mange la lumière.
+assistant: Intéressant. Qu’est-ce qui te fait penser que la lumière est une nourriture ?
+user: Peut-être parce que sans lumière elle ne pousse pas.`
+
 type ObservabilityId = typeof observabilities[number]['id']
 type LlmGateway = typeof llmPresets[number]['gateway']
 type ScenarioId = typeof scenarios[number]['id']
+type TestMode = 'turn' | 'assessment'
 
 type ApiResponse = {
   request?: unknown
   runtime?: {
     runId: string
     runtime: string
-    provider: string
-    model: string
-    agentVersion: string
-    promptVersion: string
-    output: { answer: string; raw?: unknown }
-    score: { score: number; reason?: string; passed?: boolean; guardrails?: Record<string, unknown> }
+    provider?: string
+    model?: string
+    agentVersion?: string
+    promptVersion?: string
+    output?: { answer: string; raw?: unknown }
+    score?: { score: number; reason?: string; passed?: boolean; guardrails?: Record<string, unknown> }
+    assessment?: unknown
+    schemaValidated?: boolean
+    details?: unknown
     usage?: {
       inputTokens?: number
       outputTokens?: number
@@ -88,21 +96,38 @@ type ApiResponse = {
   error?: unknown
 }
 
+function parseTranscript(text: string) {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = /^(user|assistant)\s*:\s*(.*)$/i.exec(line)
+      if (match) {
+        return { role: match[1].toLowerCase() as 'user' | 'assistant', content: match[2].trim() }
+      }
+      return { role: 'user' as const, content: line }
+    })
+    .filter((item) => item.content.length > 0)
+}
+
 export default function Page() {
   const [observability, setObservability] = useState<ObservabilityId>('mlflow')
+  const [testMode, setTestMode] = useState<TestMode>('turn')
   const [llmGateway, setLlmGateway] = useState<LlmGateway>('mistral')
   const [llmModel, setLlmModel] = useState('mistral-small-latest')
   const [scenarioId, setScenarioId] = useState<ScenarioId>('confusion-lumiere')
   const [sessionId, setSessionId] = useState('benchmark-observability-001')
   const [userId, setUserId] = useState('teacher-preview-demo')
   const [message, setMessage] = useState<string>(scenarios[0].message)
+  const [transcriptText, setTranscriptText] = useState(defaultTranscript)
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState<ApiResponse | null>(null)
 
   const selectedObs = observabilities.find((item) => item.id === observability) ?? observabilities[0]
   const selectedScenario = scenarios.find((item) => item.id === scenarioId) ?? scenarios[0]
 
-  const payload = useMemo(() => ({
+  const turnPayload = useMemo(() => ({
     runtime: 'langgraph-python' as const,
     observability,
     mode: 'real' as const,
@@ -119,6 +144,18 @@ export default function Page() {
     }
   }), [observability, llmGateway, llmModel, sessionId, userId, message])
 
+  const assessmentPayload = useMemo(() => ({
+    observability,
+    mode: 'real' as const,
+    sessionId,
+    userId,
+    transcript: parseTranscript(transcriptText)
+  }), [observability, sessionId, userId, transcriptText])
+
+  const technicalPayload = testMode === 'turn' ? turnPayload : assessmentPayload
+  const assessment = response?.runtime?.assessment
+  const answer = response?.runtime?.output?.answer
+
   function selectScenario(nextScenarioId: ScenarioId) {
     const scenario = scenarios.find((item) => item.id === nextScenarioId)
     setScenarioId(nextScenarioId)
@@ -130,7 +167,13 @@ export default function Page() {
 
   function selectObservability(next: ObservabilityId) {
     setObservability(next)
-    setSessionId(`benchmark-${next}-${selectedScenario.id}`)
+    setSessionId(`benchmark-${next}-${testMode === 'turn' ? selectedScenario.id : 'structured-assessment'}`)
+  }
+
+  function selectTestMode(next: TestMode) {
+    setTestMode(next)
+    setResponse(null)
+    setSessionId(`benchmark-${observability}-${next === 'turn' ? selectedScenario.id : 'structured-assessment'}`)
   }
 
   function selectModel(nextGateway: LlmGateway) {
@@ -145,10 +188,10 @@ export default function Page() {
     setLoading(true)
     setResponse(null)
     try {
-      const res = await fetch('/api/turn', {
+      const res = await fetch(testMode === 'turn' ? '/api/turn' : '/api/assess', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(technicalPayload)
       })
       const json = await res.json() as ApiResponse
       setResponse(json)
@@ -168,11 +211,11 @@ export default function Page() {
             <div>
               <h1>Comparer les traces.</h1>
               <p className="lead">
-                Runtime fixé sur <strong>LangGraph Python</strong>. On rejoue le même graphe AnSu dans MLflow, Phoenix et Langfuse avec leurs intégrations natives documentées.
+                Runtime fixé sur <strong>LangGraph Python</strong>. On compare les traces, les scores et les sorties structurées dans MLflow, Phoenix et Langfuse.
               </p>
             </div>
             <div className="method-card">
-              <strong>Chemin de preuve</strong>
+              <strong>Chemin de validation</strong>
               <span>Playground → LangGraph Python configuré → dashboard observability.</span>
             </div>
           </div>
@@ -218,19 +261,42 @@ export default function Page() {
           </section>
 
           <section className="card stack scenario-card">
-            <SectionTitle step="2" title="Scénario AnSu" />
+            <SectionTitle step="2" title={testMode === 'turn' ? 'Scénario AnSu' : 'Évaluation structurée'} />
 
-            <label className="field">
-              <span>Scénario</span>
-              <select value={scenarioId} onChange={(event) => selectScenario(event.target.value as ScenarioId)}>
-                {scenarios.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </select>
-            </label>
+            <div className="choice-grid two-choice" role="radiogroup" aria-label="Type de test">
+              <button className={`choice ${testMode === 'turn' ? 'choice-active' : ''}`} type="button" onClick={() => selectTestMode('turn')}>
+                <strong>Tour agentique</strong>
+                <span>Réponse agent, tool calls, score</span>
+              </button>
+              <button className={`choice ${testMode === 'assessment' ? 'choice-active' : ''}`} type="button" onClick={() => selectTestMode('assessment')}>
+                <strong>Évaluation structurée</strong>
+                <span>JSON métier pour B5</span>
+              </button>
+            </div>
 
-            <label className="field grow-field">
-              <span>Message élève</span>
-              <textarea rows={7} value={message} onChange={(event) => setMessage(event.target.value)} />
-            </label>
+            {testMode === 'turn' ? (
+              <>
+                <label className="field">
+                  <span>Scénario</span>
+                  <select value={scenarioId} onChange={(event) => selectScenario(event.target.value as ScenarioId)}>
+                    {scenarios.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </label>
+
+                <label className="field grow-field">
+                  <span>Message élève</span>
+                  <textarea rows={7} value={message} onChange={(event) => setMessage(event.target.value)} />
+                </label>
+              </>
+            ) : (
+              <>
+                <p className="note">Ce mode appelle l’endpoint structured output du runtime et retourne un objet `NotionAssessment` validé par schéma.</p>
+                <label className="field grow-field">
+                  <span>Transcript à évaluer</span>
+                  <textarea rows={9} value={transcriptText} onChange={(event) => setTranscriptText(event.target.value)} />
+                </label>
+              </>
+            )}
 
             <div className="split">
               <label className="field">
@@ -244,22 +310,28 @@ export default function Page() {
             </div>
 
             <button className="button" disabled={loading} type="submit">
-              {loading ? 'Trace en cours…' : `Lancer dans ${selectedObs.label}`}
+              {loading ? 'Exécution en cours…' : testMode === 'turn' ? `Lancer dans ${selectedObs.label}` : `Évaluer dans ${selectedObs.label}`}
             </button>
           </section>
 
           <section className="card stack result-card">
-            <SectionTitle step="3" title="Preuve" />
+            <SectionTitle step="3" title="Résultat" />
 
             {response?.error ? <div className="error-box">{String(response.error)}</div> : null}
 
             <div className="answer">
-              <span>Réponse agent</span>
-              <p>{response?.runtime?.output.answer ?? 'Aucun test lancé.'}</p>
+              <span>{testMode === 'turn' ? 'Réponse agent' : 'Sortie structurée'}</span>
+              {testMode === 'turn' ? (
+                <p>{answer ?? 'Aucun test lancé.'}</p>
+              ) : assessment ? (
+                <pre>{JSON.stringify(assessment, null, 2)}</pre>
+              ) : (
+                <p>Aucune évaluation lancée.</p>
+              )}
             </div>
 
             <div className="metrics">
-              <Metric label="Score" value={response?.runtime?.score.score ?? '—'} />
+              {testMode === 'turn' ? <Metric label="Score" value={response?.runtime?.score?.score ?? '—'} /> : <Metric label="Schéma" value={response?.runtime?.schemaValidated ? 'validé' : '—'} />}
               <Metric label="Runtime" value={response?.runtime?.runtime ?? 'langgraph-python'} />
               <Metric label="Trace" value={response?.trace?.status ?? '—'} />
             </div>
@@ -280,7 +352,7 @@ export default function Page() {
             <details className="details">
               <summary>Données techniques</summary>
               <div className="details-content">
-                <pre>{JSON.stringify({ payload, response }, null, 2)}</pre>
+                <pre>{JSON.stringify({ payload: technicalPayload, response }, null, 2)}</pre>
               </div>
             </details>
           </section>

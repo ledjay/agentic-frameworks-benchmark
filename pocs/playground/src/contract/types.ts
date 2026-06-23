@@ -27,12 +27,27 @@ export const turnRequestSchema = z.object({
   teacherConfig: teacherConfigSchema
 })
 
+export const transcriptMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().min(1)
+})
+
+export const assessmentRequestSchema = z.object({
+  observability: observabilitySchema,
+  mode: z.enum(['mock', 'real']).default('real'),
+  sessionId: z.string().min(1),
+  userId: z.string().min(1),
+  transcript: z.array(transcriptMessageSchema).min(1)
+})
+
 export type RuntimeId = z.infer<typeof runtimeSchema>
 export type LlmGateway = z.infer<typeof llmGatewaySchema>
 export type LlmConfig = z.infer<typeof llmConfigSchema>
 export type ObservabilityId = z.infer<typeof observabilitySchema>
 export type TeacherConfig = z.infer<typeof teacherConfigSchema>
 export type TurnRequest = z.infer<typeof turnRequestSchema>
+export type TranscriptMessage = z.infer<typeof transcriptMessageSchema>
+export type AssessmentRequest = z.infer<typeof assessmentRequestSchema>
 
 export type RuntimeResult = {
   runtime: RuntimeId | 'mock' | 'langgraph' | 'mastra'

@@ -1,4 +1,4 @@
-# Benchmark frameworks agentiques — AnSu v5
+# Benchmark frameworks agentiques — AnSu v2
 
 Ce repo sert à comparer les briques techniques possibles pour le POC agentique AnSu : **runtimes agentiques** (Mastra, LangChain, LangGraph), **observability / evals** (Langfuse, MLflow, Phoenix), providers LLM et playground de test. On y trouve à la fois les **documents de décision** du benchmark et les **POC exécutables en local** pour tester un agent naïf, ses traces, ses scores et ses sorties structurées.
 

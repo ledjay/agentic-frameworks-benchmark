@@ -1,8 +1,8 @@
-# Méthodologie playground — benchmark AnSu v2
+# Méthodologie playground — benchmark AnSu v5
 
 ## Décision
 
-Le benchmark AnSu v2 se base désormais sur un **front étalon unique** :
+Le benchmark AnSu v5 se base désormais sur un **front étalon unique** :
 
 ```txt
 pocs/playground/
@@ -83,21 +83,21 @@ Doit contenir :
 
 Toute trace envoyée par un adapter observability doit être retrouvable avec :
 
-| Champ | Raison |
-|---|---|
-| `traceName = ansu.playground.agent_turn` | nom commun entre outils |
-| `ansuTraceSchema = ansu-playground-trace-v0.1.0` | compatibilité et migrations futures |
-| `sessionId` | retrouver une session AnSu |
-| `userId` | filtrage utilisateur pseudo/anonymisé |
-| `runtime` | comparer fake/Mastra/LangGraph Python/LangGraph TS |
-| `observability` | identifier l'outil cible |
-| `runId` | idempotence et debug |
-| `agentId`, `agentVersion` | version runtime/agent |
-| `promptVersion` | non-régression prompt |
-| `llmGateway`, `requestedModel` | combo LLM demandé depuis le front |
-| `provider`, `model` | provider/modèle effectifs ou simulés |
-| `notion`, `matiere`, `niveauScolaire` | contexte pédagogique minimal |
-| `ansu_naivety` | score pédagogique principal |
+| Champ                                            | Raison                                             |
+| ------------------------------------------------ | -------------------------------------------------- |
+| `traceName = ansu.playground.agent_turn`         | nom commun entre outils                            |
+| `ansuTraceSchema = ansu-playground-trace-v0.1.0` | compatibilité et migrations futures                |
+| `sessionId`                                      | retrouver une session AnSu                         |
+| `userId`                                         | filtrage utilisateur pseudo/anonymisé              |
+| `runtime`                                        | comparer fake/Mastra/LangGraph Python/LangGraph TS |
+| `observability`                                  | identifier l'outil cible                           |
+| `runId`                                          | idempotence et debug                               |
+| `agentId`, `agentVersion`                        | version runtime/agent                              |
+| `promptVersion`                                  | non-régression prompt                              |
+| `llmGateway`, `requestedModel`                   | combo LLM demandé depuis le front                  |
+| `provider`, `model`                              | provider/modèle effectifs ou simulés               |
+| `notion`, `matiere`, `niveauScolaire`            | contexte pédagogique minimal                       |
+| `ansu_naivety`                                   | score pédagogique principal                        |
 
 ## Spans standardisés
 
@@ -115,16 +115,16 @@ Chaque adapter doit préserver ces noms, ou les mapper explicitement dans la fic
 
 ## Statut actuel
 
-| Élément | Statut |
-|---|---|
-| Playground UI | Build OK |
-| Runtime `fake` | Validé |
-| Runtime `langgraph-typescript` | Validé |
-| Runtime `mastra` | Adapter présent, à revalider service lancé |
-| Runtime `langgraph-python` | Adapter présent, à revalider service lancé |
-| Observability `langfuse` | Validé avec trace réelle |
-| Observability `mlflow` | À câbler dans playground |
-| Observability `phoenix` | À câbler dans playground |
+| Élément                        | Statut                                     |
+| ------------------------------ | ------------------------------------------ |
+| Playground UI                  | Build OK                                   |
+| Runtime `fake`                 | Validé                                     |
+| Runtime `langgraph-typescript` | Validé                                     |
+| Runtime `mastra`               | Adapter présent, à revalider service lancé |
+| Runtime `langgraph-python`     | Adapter présent, à revalider service lancé |
+| Observability `langfuse`       | Validé avec trace réelle                   |
+| Observability `mlflow`         | À câbler dans playground                   |
+| Observability `phoenix`        | À câbler dans playground                   |
 
 ## Nettoyage des POC historiques
 

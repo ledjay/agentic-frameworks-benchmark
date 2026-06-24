@@ -1,10 +1,10 @@
-# Traces prioritaires AnSu v2
+# Traces prioritaires AnSu v5
 
 > **Statut : brouillon de cadrage.** Objectif : clarifier ce qu’AnSu doit pouvoir tracer pour piloter le MVP, puis réutiliser cette liste comme checklist dans le benchmark observability/evals.
 
 ## 1. Pourquoi ce document ?
 
-Le MVP AnSu v2 devra faire tourner un agent pédagogique avec plusieurs étapes critiques :
+Le MVP AnSu v5 devra faire tourner un agent pédagogique avec plusieurs étapes critiques :
 
 ```txt
 message élève
@@ -38,7 +38,6 @@ Outil observability/evals = debug, inspection, évaluation, comparaison, alerte.
 Une trace critique peut donc être présente dans les deux, mais l’outil d’observability ne doit pas devenir l’unique détenteur des données produit critiques.
 
 Note de lecture : quand la source indique `Base métier + copie obs`, la base AnSu reste la référence. L’outil observability reçoit une copie pour filtrer, comprendre ou comparer les traces.
-
 
 ## 1.1 Architecture logique des traces
 

@@ -1,4 +1,4 @@
-# Point d’étape — pivot playground AnSu v2
+# Point d’étape — pivot playground AnSu v5
 
 > Date : juin 2026. Document de pilotage pour reprendre les évaluations runtime et observability/evals avec la méthode v2.
 
@@ -29,31 +29,31 @@ runtime × observability/evals × llm gateway × model
 
 ### Playground
 
-| Élément | Statut | Preuve |
-|---|---|---|
-| UI benchmark | Build OK | `task playground:build` |
-| Contrat `TurnRequest → RuntimeResult → TraceResult` | Implémenté | `pocs/playground/src/contract/types.ts` |
-| Sélecteur runtime | Implémenté | UI/API |
-| Sélecteur observability/evals | Implémenté | UI/API |
-| Sélecteur LLM gateway/model | Implémenté | UI/API |
-| Trace Langfuse avec metadata complètes | Validé technique | smoke non décisionnel, comportement déterministe |
+| Élément                                             | Statut           | Preuve                                           |
+| --------------------------------------------------- | ---------------- | ------------------------------------------------ |
+| UI benchmark                                        | Build OK         | `task playground:build`                          |
+| Contrat `TurnRequest → RuntimeResult → TraceResult` | Implémenté       | `pocs/playground/src/contract/types.ts`          |
+| Sélecteur runtime                                   | Implémenté       | UI/API                                           |
+| Sélecteur observability/evals                       | Implémenté       | UI/API                                           |
+| Sélecteur LLM gateway/model                         | Implémenté       | UI/API                                           |
+| Trace Langfuse avec metadata complètes              | Validé technique | smoke non décisionnel, comportement déterministe |
 
 ### Runtimes
 
-| Runtime | Statut v2 | Notes |
-|---|---|---|
-| `fake` | Dev/debug only | baseline UI, hors benchmark |
-| `langgraph-typescript` | Câblé techniquement | validation benchmark réelle à faire |
-| `mastra` | Validé technique historique, adapter playground présent | à revalider depuis playground |
-| `langgraph-python` | Validé technique historique, adapter playground présent | à revalider depuis playground |
+| Runtime                | Statut v2                                               | Notes                               |
+| ---------------------- | ------------------------------------------------------- | ----------------------------------- |
+| `fake`                 | Dev/debug only                                          | baseline UI, hors benchmark         |
+| `langgraph-typescript` | Câblé techniquement                                     | validation benchmark réelle à faire |
+| `mastra`               | Validé technique historique, adapter playground présent | à revalider depuis playground       |
+| `langgraph-python`     | Validé technique historique, adapter playground présent | à revalider depuis playground       |
 
 ### Observability / evals
 
-| Outil | Statut v2 | Notes |
-|---|---|---|
+| Outil      | Statut v2                | Notes                                                             |
+| ---------- | ------------------------ | ----------------------------------------------------------------- |
 | `langfuse` | Validé technique initial | trace canonique + score + metadata sur smoke ; combo réel à faire |
-| `mlflow` | Validé technique isolée | seed/eval/prompt registry OK, adapter playground absent |
-| `phoenix` | POC historique | à repasser v2 |
+| `mlflow`   | Validé technique isolée  | seed/eval/prompt registry OK, adapter playground absent           |
+| `phoenix`  | POC historique           | à repasser v2                                                     |
 
 ## 3. Ce qui est obsolète ou à relire
 
@@ -88,11 +88,11 @@ fiches/runtime-langgraph-typescript.md
 
 Les critères observability/evals v2 ajoutent explicitement :
 
-| ID | Question |
-|---|---|
-| B10 | Peut-on manager les prompts ? |
-| B11 | Peut-on versionner les prompts ? |
-| B12 | Peut-on injecter des variables efficacement ? |
+| ID  | Question                                       |
+| --- | ---------------------------------------------- |
+| B10 | Peut-on manager les prompts ?                  |
+| B11 | Peut-on versionner les prompts ?               |
+| B12 | Peut-on injecter des variables efficacement ?  |
 | B13 | L’interface est-elle claire, simple et utile ? |
 
 Ces questions sont prioritaires pour Langfuse, MLflow et Phoenix.

@@ -1,6 +1,6 @@
-# Évaluation MLflow pour AnSu v2
-> **Statut : POC historique.** Ce document ne vaut pas validation dans la nouvelle grille observability/evals. MLflow doit être repassé avec `docs/benchmark-agentique/TRACES_PRIORITAIRES.md`.
+# Évaluation MLflow pour AnSu v5
 
+> **Statut : POC historique.** Ce document ne vaut pas validation dans la nouvelle grille observability/evals. MLflow doit être repassé avec `docs/benchmark-agentique/TRACES_PRIORITAIRES.md`.
 
 ## Résumé
 
@@ -68,16 +68,16 @@ python eval_traces.py
 
 ## Routes API observées
 
-| Besoin | Route / méthode | Statut |
-|---|---|---|
-| UI MLflow | `/` | OK |
-| UI Gateway | `/#/gateway` | Visible |
-| Experiments | `POST /api/2.0/mlflow/experiments/search` | OK |
-| Runs | `POST /api/2.0/mlflow/runs/search` | OK |
-| Traces GenAI | `POST /api/3.0/mlflow/traces/search` | OK |
-| OTLP ingest | `POST /v1/traces` avec header `x-mlflow-experiment-id` | À tester avec collector |
-| Gateway OpenAI-compatible | `/gateway/mlflow/v1/...` | Documenté, pas encore testé |
-| Prompt Registry | SDK `mlflow.genai.register_prompt/search_prompts/load_prompt` | OK |
+| Besoin                    | Route / méthode                                               | Statut                      |
+| ------------------------- | ------------------------------------------------------------- | --------------------------- |
+| UI MLflow                 | `/`                                                           | OK                          |
+| UI Gateway                | `/#/gateway`                                                  | Visible                     |
+| Experiments               | `POST /api/2.0/mlflow/experiments/search`                     | OK                          |
+| Runs                      | `POST /api/2.0/mlflow/runs/search`                            | OK                          |
+| Traces GenAI              | `POST /api/3.0/mlflow/traces/search`                          | OK                          |
+| OTLP ingest               | `POST /v1/traces` avec header `x-mlflow-experiment-id`        | À tester avec collector     |
+| Gateway OpenAI-compatible | `/gateway/mlflow/v1/...`                                      | Documenté, pas encore testé |
+| Prompt Registry           | SDK `mlflow.genai.register_prompt/search_prompts/load_prompt` | OK                          |
 
 ## Dashboard Next expérimental
 

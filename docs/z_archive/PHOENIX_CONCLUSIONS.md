@@ -1,6 +1,6 @@
-# Conclusions provisoires — Arize Phoenix pour AnSu v2
-> **Statut : archive historique.** Phoenix est repassé en `Non testé` pour la nouvelle grille observability/evals ; ce document est conservé pour mémoire seulement.
+# Conclusions provisoires — Arize Phoenix pour AnSu v5
 
+> **Statut : archive historique.** Phoenix est repassé en `Non testé` pour la nouvelle grille observability/evals ; ce document est conservé pour mémoire seulement.
 
 ## Verdict en une phrase
 
@@ -79,24 +79,24 @@ Il démontre :
 
 ## Matrice synthétique
 
-| Critère | Évaluation Phoenix | Commentaire |
-|---|---|---|
-| Bootstrap octobre, agent unique | 🟡 Partiel | Très utile pour observer/évaluer le POC, mais ne fournit pas le runtime de l'agent. |
-| Runtime agentique | ❌ Non | Phoenix observe des agents, mais ne les exécute pas comme runtime principal. |
-| Registry agent métier | ❌ Non | Pas de notion complète d'agent AnSu versionné/configurable/déployable. |
-| Prompt master | 🟡 Partiel | Prompt management/versioning disponible. REST exploitable pour le POC, mais à tester endpoint par endpoint avant dépendance critique. |
-| Variables de prompt profs | ❌ Non natif | Variables matérialisées comme placeholders Mustache dans le template, pas comme objets first-class. Schema métier à porter côté AnSu. |
-| Modération input/output | 🟡 Observable | Phoenix peut tracer guardrails/modération ; la logique doit être dans le runtime AnSu. |
-| Anti-dérive / naïveté | 🟡 Évaluable | Phoenix peut stocker/tracer/evaluer les dérives ; la détection/correction doit être construite. |
-| Traces pédagogiques | ✅ Fort | Très bon modèle traces/spans, annotations, sessions. À adapter pour dashboard prof. |
-| Evals / non-régression | ✅ Fort | Datasets, experiments, runs, evaluations, annotations. Runner applicatif nécessaire. |
-| Recherche / preuve d'impact | 🟡 Bon potentiel | Datasets/experiments utiles ; anonymisation, cohortes et exports chercheurs à porter côté AnSu. |
-| Observabilité OpenTelemetry | ✅ Fort | OTLP HTTP/gRPC, OpenInference, spans typés, intégrations nombreuses. |
-| Grafana / Tempo | 🟡 Faisable | Prévoir un OTel Collector en fan-out : app → collector → Phoenix + Tempo. |
-| API dashboard Next | ✅ Validé POC | REST API suffisante pour une première façade Next ; GraphQL peut rester nécessaire pour certains usages avancés. |
-| SecNumCloud / socle compatible | 🟡 Potentiel | Self-host Docker/Helm, Postgres possible, télémétrie désactivable. Pas d'offre SecNumCloud native identifiée. Licence à valider. |
-| Licence / open source | 🟡 À vérifier | Code disponible sous Elastic License 2.0, pas MIT/Apache. Implications institutionnelles à vérifier. |
-| Dashboard prof final | ❌ Non | L'UI Phoenix doit rester réservée à la team produit/tech. |
+| Critère                         | Évaluation Phoenix | Commentaire                                                                                                                           |
+| ------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Bootstrap octobre, agent unique | 🟡 Partiel         | Très utile pour observer/évaluer le POC, mais ne fournit pas le runtime de l'agent.                                                   |
+| Runtime agentique               | ❌ Non             | Phoenix observe des agents, mais ne les exécute pas comme runtime principal.                                                          |
+| Registry agent métier           | ❌ Non             | Pas de notion complète d'agent AnSu versionné/configurable/déployable.                                                                |
+| Prompt master                   | 🟡 Partiel         | Prompt management/versioning disponible. REST exploitable pour le POC, mais à tester endpoint par endpoint avant dépendance critique. |
+| Variables de prompt profs       | ❌ Non natif       | Variables matérialisées comme placeholders Mustache dans le template, pas comme objets first-class. Schema métier à porter côté AnSu. |
+| Modération input/output         | 🟡 Observable      | Phoenix peut tracer guardrails/modération ; la logique doit être dans le runtime AnSu.                                                |
+| Anti-dérive / naïveté           | 🟡 Évaluable       | Phoenix peut stocker/tracer/evaluer les dérives ; la détection/correction doit être construite.                                       |
+| Traces pédagogiques             | ✅ Fort            | Très bon modèle traces/spans, annotations, sessions. À adapter pour dashboard prof.                                                   |
+| Evals / non-régression          | ✅ Fort            | Datasets, experiments, runs, evaluations, annotations. Runner applicatif nécessaire.                                                  |
+| Recherche / preuve d'impact     | 🟡 Bon potentiel   | Datasets/experiments utiles ; anonymisation, cohortes et exports chercheurs à porter côté AnSu.                                       |
+| Observabilité OpenTelemetry     | ✅ Fort            | OTLP HTTP/gRPC, OpenInference, spans typés, intégrations nombreuses.                                                                  |
+| Grafana / Tempo                 | 🟡 Faisable        | Prévoir un OTel Collector en fan-out : app → collector → Phoenix + Tempo.                                                             |
+| API dashboard Next              | ✅ Validé POC      | REST API suffisante pour une première façade Next ; GraphQL peut rester nécessaire pour certains usages avancés.                      |
+| SecNumCloud / socle compatible  | 🟡 Potentiel       | Self-host Docker/Helm, Postgres possible, télémétrie désactivable. Pas d'offre SecNumCloud native identifiée. Licence à valider.      |
+| Licence / open source           | 🟡 À vérifier      | Code disponible sous Elastic License 2.0, pas MIT/Apache. Implications institutionnelles à vérifier.                                  |
+| Dashboard prof final            | ❌ Non             | L'UI Phoenix doit rester réservée à la team produit/tech.                                                                             |
 
 Légende : ✅ bon fit ; 🟡 utile mais incomplet/à cadrer ; ❌ ne couvre pas le besoin.
 
@@ -300,15 +300,15 @@ Phoenix peut alimenter la preuve d'impact, mais ne doit pas être la seule gouve
 
 ## Risques
 
-| Risque | Niveau | Mitigation |
-|---|---|---|
-| Confondre Phoenix avec un runtime agentique | Élevé | Le positionner clairement comme observabilité/evals. |
-| Mettre les variables profs uniquement dans Phoenix | Moyen | Stocker schema et valeurs dans AnSu DB. |
-| Stocker des PII dans les traces | Élevé | Pseudonymisation, redaction, minimisation, rétention. |
-| S'appuyer sur prompt management sans vérifier Mistral/Albert | Moyen | Tester providers cibles et prévoir source de vérité AnSu. |
-| REST API partiellement rugueuse | Moyen | BFF Next robuste, tests d'intégration, GraphQL si nécessaire. |
-| Licence Elastic License 2.0 | À vérifier | Validation juridique/DevSecOps avant adoption critique. |
-| Dépendance UI Phoenix pour les profs | Élevé | UI prof exclusivement Next/AnSu. |
+| Risque                                                       | Niveau     | Mitigation                                                    |
+| ------------------------------------------------------------ | ---------- | ------------------------------------------------------------- |
+| Confondre Phoenix avec un runtime agentique                  | Élevé      | Le positionner clairement comme observabilité/evals.          |
+| Mettre les variables profs uniquement dans Phoenix           | Moyen      | Stocker schema et valeurs dans AnSu DB.                       |
+| Stocker des PII dans les traces                              | Élevé      | Pseudonymisation, redaction, minimisation, rétention.         |
+| S'appuyer sur prompt management sans vérifier Mistral/Albert | Moyen      | Tester providers cibles et prévoir source de vérité AnSu.     |
+| REST API partiellement rugueuse                              | Moyen      | BFF Next robuste, tests d'intégration, GraphQL si nécessaire. |
+| Licence Elastic License 2.0                                  | À vérifier | Validation juridique/DevSecOps avant adoption critique.       |
+| Dépendance UI Phoenix pour les profs                         | Élevé      | UI prof exclusivement Next/AnSu.                              |
 
 ## Décision provisoire
 

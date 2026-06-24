@@ -1,6 +1,6 @@
-# Conclusions provisoires — MLflow pour AnSu v2
-> **Statut : archive historique.** MLflow est repassé en `Non testé` pour la nouvelle grille observability/evals ; ce document est conservé pour mémoire seulement.
+# Conclusions provisoires — MLflow pour AnSu v5
 
+> **Statut : archive historique.** MLflow est repassé en `Non testé` pour la nouvelle grille observability/evals ; ce document est conservé pour mémoire seulement.
 
 ## Verdict en une phrase
 
@@ -65,24 +65,24 @@ http://127.0.0.1:5001
 
 ## Matrice synthétique
 
-| Critère | Évaluation MLflow | Commentaire |
-|---|---|---|
-| Bootstrap octobre, agent unique | 🟡 Partiel | Très rapide pour tracer/évaluer un agent, mais il faut construire le runtime. |
-| Runtime agentique | ❌ Non | MLflow observe/évalue des agents ; la notion OSS d'agent runtime complet n'est pas centrale. Certaines APIs `Agent` sont Databricks-only. |
-| Registry agent métier | ❌ Non | Pas de modèle AnSu natif : posture, séquence, atelier, classe, contrat didactique restent côté AnSu. |
-| Prompt master | ✅ Fort | Prompt Registry OSS testé, versioning via `mlflow.genai.register_prompt`. |
-| Variables de prompt profs | 🟡 Partiel | Variables `{{...}}` supportées dans les templates, mais schema métier des variables à porter côté AnSu. |
-| Modération input/output | 🟡 Observable | Peut tracer et évaluer guardrails ; la logique runtime est à construire. |
-| Anti-dérive / naïveté | 🟡 Fort pour eval | Trace-based evaluation très adaptée pour non-régression ; détection/correction runtime à construire. |
-| Traces pédagogiques | ✅ Fort | `@mlflow.trace`, sessions, recherche de traces, spans, metadata. |
-| Evals / non-régression | ✅ Très fort | `mlflow.genai.evaluate`, scorers custom, trace-based eval, conversation eval. |
-| Recherche / preuve d'impact | ✅ Très fort potentiel | Héritage MLOps + datasets + evals + metrics + exports DataFrame. Très bon candidat pour mesure scientifique. |
-| Observabilité OpenTelemetry | ✅ Fort | OTLP `/v1/traces`, GenAI semantic conventions, export possible vers backends OTel. |
-| Grafana / Tempo | 🟡 Faisable | Docs indiquent export/dual export OTel ; à tester concrètement avec collector. |
-| API dashboard Next | 🟡 À cadrer | REST existe, mais SDK Python semble plus naturel pour GenAI. Prévoir backend AnSu/BFF plutôt que Next direct. |
-| SecNumCloud / socle compatible | 🟡 Bon potentiel | OSS, Apache-2.0, self-host, Docker/K8s possible, SQL + artifact store. Sécurité/auth prod à vérifier. |
-| Licence / open source | ✅ Fort | Apache License 2.0. Avantage net vs licences plus restrictives. |
-| Dashboard prof final | ❌ Non | UI MLflow réservée tech/data/produit, pas adaptée aux profs. |
+| Critère                         | Évaluation MLflow      | Commentaire                                                                                                                               |
+| ------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Bootstrap octobre, agent unique | 🟡 Partiel             | Très rapide pour tracer/évaluer un agent, mais il faut construire le runtime.                                                             |
+| Runtime agentique               | ❌ Non                 | MLflow observe/évalue des agents ; la notion OSS d'agent runtime complet n'est pas centrale. Certaines APIs `Agent` sont Databricks-only. |
+| Registry agent métier           | ❌ Non                 | Pas de modèle AnSu natif : posture, séquence, atelier, classe, contrat didactique restent côté AnSu.                                      |
+| Prompt master                   | ✅ Fort                | Prompt Registry OSS testé, versioning via `mlflow.genai.register_prompt`.                                                                 |
+| Variables de prompt profs       | 🟡 Partiel             | Variables `{{...}}` supportées dans les templates, mais schema métier des variables à porter côté AnSu.                                   |
+| Modération input/output         | 🟡 Observable          | Peut tracer et évaluer guardrails ; la logique runtime est à construire.                                                                  |
+| Anti-dérive / naïveté           | 🟡 Fort pour eval      | Trace-based evaluation très adaptée pour non-régression ; détection/correction runtime à construire.                                      |
+| Traces pédagogiques             | ✅ Fort                | `@mlflow.trace`, sessions, recherche de traces, spans, metadata.                                                                          |
+| Evals / non-régression          | ✅ Très fort           | `mlflow.genai.evaluate`, scorers custom, trace-based eval, conversation eval.                                                             |
+| Recherche / preuve d'impact     | ✅ Très fort potentiel | Héritage MLOps + datasets + evals + metrics + exports DataFrame. Très bon candidat pour mesure scientifique.                              |
+| Observabilité OpenTelemetry     | ✅ Fort                | OTLP `/v1/traces`, GenAI semantic conventions, export possible vers backends OTel.                                                        |
+| Grafana / Tempo                 | 🟡 Faisable            | Docs indiquent export/dual export OTel ; à tester concrètement avec collector.                                                            |
+| API dashboard Next              | 🟡 À cadrer            | REST existe, mais SDK Python semble plus naturel pour GenAI. Prévoir backend AnSu/BFF plutôt que Next direct.                             |
+| SecNumCloud / socle compatible  | 🟡 Bon potentiel       | OSS, Apache-2.0, self-host, Docker/K8s possible, SQL + artifact store. Sécurité/auth prod à vérifier.                                     |
+| Licence / open source           | ✅ Fort                | Apache License 2.0. Avantage net vs licences plus restrictives.                                                                           |
+| Dashboard prof final            | ❌ Non                 | UI MLflow réservée tech/data/produit, pas adaptée aux profs.                                                                              |
 
 Légende : ✅ bon fit ; 🟡 utile mais incomplet/à cadrer ; ❌ ne couvre pas le besoin.
 
@@ -277,17 +277,17 @@ MLflow dispose d'une REST API sous `/api/2.0/mlflow/...`, et les traces GenAI so
 
 Routes observées/testées :
 
-| Besoin | Route / méthode | Statut POC |
-|---|---|---|
-| UI MLflow | `/` | ✅ OK |
-| UI Gateway | `/#/gateway` | ✅ Visible |
-| Search experiments | `POST /api/2.0/mlflow/experiments/search` | ✅ OK |
-| Search runs | `POST /api/2.0/mlflow/runs/search` | ✅ OK |
-| Search traces GenAI | `POST /api/3.0/mlflow/traces/search` | ✅ OK |
-| OTLP ingest | `POST /v1/traces` avec `x-mlflow-experiment-id` | 🟡 À tester avec collector |
-| AI Gateway OpenAI-compatible | `/gateway/mlflow/v1/...` | 🟡 Documenté, pas encore testé |
-| Ancien Gateway invoke | `/gateway/{route}/invocations` | 🟡 Documenté legacy |
-| Prompt Registry | SDK `mlflow.genai.*` | ✅ OK via SDK |
+| Besoin                       | Route / méthode                                 | Statut POC                     |
+| ---------------------------- | ----------------------------------------------- | ------------------------------ |
+| UI MLflow                    | `/`                                             | ✅ OK                          |
+| UI Gateway                   | `/#/gateway`                                    | ✅ Visible                     |
+| Search experiments           | `POST /api/2.0/mlflow/experiments/search`       | ✅ OK                          |
+| Search runs                  | `POST /api/2.0/mlflow/runs/search`              | ✅ OK                          |
+| Search traces GenAI          | `POST /api/3.0/mlflow/traces/search`            | ✅ OK                          |
+| OTLP ingest                  | `POST /v1/traces` avec `x-mlflow-experiment-id` | 🟡 À tester avec collector     |
+| AI Gateway OpenAI-compatible | `/gateway/mlflow/v1/...`                        | 🟡 Documenté, pas encore testé |
+| Ancien Gateway invoke        | `/gateway/{route}/invocations`                  | 🟡 Documenté legacy            |
+| Prompt Registry              | SDK `mlflow.genai.*`                            | ✅ OK via SDK                  |
 
 Le dashboard Next utilise donc deux chemins :
 
@@ -321,29 +321,29 @@ Cela colle de toute façon avec nos besoins de :
 
 ## Comparaison rapide avec Phoenix
 
-| Sujet | Phoenix | MLflow |
-|---|---|---|
-| Licence | Elastic License 2.0 | Apache-2.0 |
-| Positionnement | Observabilité/evals LLM | AI engineering / MLOps / GenAI evals |
-| Tracing OTel | Très fort | Très fort |
-| Prompt registry | Partiel, REST rugueux | Fort, OSS testé |
-| Templates string | Refusés côté REST testé | Supportés |
-| Trace-based eval | Oui, experiments/evals | Très fort via `mlflow.genai.evaluate` |
-| UI produit tech | Très orientée LLM traces | Très orientée ML/Data/experiments |
-| Runtime agent | Non | Non |
-| Recherche/preuve impact | Bon potentiel | Très bon potentiel |
-| Simplicité UX non-tech | Phoenix plus spécialisé LLM | MLflow plus dense/MLOps |
+| Sujet                   | Phoenix                     | MLflow                                |
+| ----------------------- | --------------------------- | ------------------------------------- |
+| Licence                 | Elastic License 2.0         | Apache-2.0                            |
+| Positionnement          | Observabilité/evals LLM     | AI engineering / MLOps / GenAI evals  |
+| Tracing OTel            | Très fort                   | Très fort                             |
+| Prompt registry         | Partiel, REST rugueux       | Fort, OSS testé                       |
+| Templates string        | Refusés côté REST testé     | Supportés                             |
+| Trace-based eval        | Oui, experiments/evals      | Très fort via `mlflow.genai.evaluate` |
+| UI produit tech         | Très orientée LLM traces    | Très orientée ML/Data/experiments     |
+| Runtime agent           | Non                         | Non                                   |
+| Recherche/preuve impact | Bon potentiel               | Très bon potentiel                    |
+| Simplicité UX non-tech  | Phoenix plus spécialisé LLM | MLflow plus dense/MLOps               |
 
 ## Risques
 
-| Risque | Niveau | Mitigation |
-|---|---|---|
-| Confondre MLflow avec runtime agentique | Élevé | Le positionner comme tracking/evals/prompt registry. |
-| Dépendre d'APIs Databricks-only | Élevé | Vérifier chaque feature en OSS self-host avant adoption. |
-| UI trop technique pour produit/non-tech | Moyen | Garder UI MLflow pour tech/data ; dashboard prof dans Next. |
-| Package complet lourd | Faible à moyen | Utiliser `mlflow-tracing` en production si tracing seul. |
-| Auth/sécurité serveur OSS | Moyen | Déploiement derrière proxy/auth socle ; revue DevSecOps. |
-| Données élèves dans traces | Élevé | Redaction/pseudonymisation côté runtime AnSu. |
+| Risque                                  | Niveau         | Mitigation                                                  |
+| --------------------------------------- | -------------- | ----------------------------------------------------------- |
+| Confondre MLflow avec runtime agentique | Élevé          | Le positionner comme tracking/evals/prompt registry.        |
+| Dépendre d'APIs Databricks-only         | Élevé          | Vérifier chaque feature en OSS self-host avant adoption.    |
+| UI trop technique pour produit/non-tech | Moyen          | Garder UI MLflow pour tech/data ; dashboard prof dans Next. |
+| Package complet lourd                   | Faible à moyen | Utiliser `mlflow-tracing` en production si tracing seul.    |
+| Auth/sécurité serveur OSS               | Moyen          | Déploiement derrière proxy/auth socle ; revue DevSecOps.    |
+| Données élèves dans traces              | Élevé          | Redaction/pseudonymisation côté runtime AnSu.               |
 
 ## Décision provisoire
 

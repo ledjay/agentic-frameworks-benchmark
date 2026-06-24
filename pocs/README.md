@@ -1,6 +1,6 @@
 # POC benchmark AnSu
 
-Ce dossier regroupe les preuves techniques du benchmark agentique AnSu v2.
+Ce dossier regroupe les preuves techniques du benchmark agentique AnSu v5.
 
 ## Méthode actuelle
 
@@ -55,15 +55,15 @@ http://localhost:3013
 
 ## Statut playground
 
-| Dimension | Valeurs | Statut |
-|---|---|---|
-| Runtime | `fake` | Validé |
-| Runtime | `langgraph-typescript` | Validé |
-| Runtime | `mastra` | Adapter présent, à revalider service lancé |
-| Runtime | `langgraph-python` | Adapter présent, à revalider service lancé |
-| Observability | `langfuse` | Validé trace réelle |
-| Observability | `mlflow` | À câbler |
-| Observability | `phoenix` | À câbler |
+| Dimension         | Valeurs                                          | Statut                                       |
+| ----------------- | ------------------------------------------------ | -------------------------------------------- |
+| Runtime           | `fake`                                           | Validé                                       |
+| Runtime           | `langgraph-typescript`                           | Validé                                       |
+| Runtime           | `mastra`                                         | Adapter présent, à revalider service lancé   |
+| Runtime           | `langgraph-python`                               | Adapter présent, à revalider service lancé   |
+| Observability     | `langfuse`                                       | Validé trace réelle                          |
+| Observability     | `mlflow`                                         | À câbler                                     |
+| Observability     | `phoenix`                                        | À câbler                                     |
 | LLM gateway/model | `mock`, `albert`, `mistral`, `openai-compatible` | Sélecteur validé ; propagation trace validée |
 
 ## Dashboards historiques

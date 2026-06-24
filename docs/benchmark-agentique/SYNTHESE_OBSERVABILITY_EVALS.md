@@ -1,4 +1,4 @@
-# Synthèse observability / evals — AnSu v2
+# Synthèse observability / evals — AnSu v5
 
 > Statut : document de partage et de prise de décision.  
 > Objet : comparer **MLflow**, **Phoenix** et **Langfuse** pour l’observability et les évaluations AnSu.  
@@ -72,19 +72,19 @@ Le score pédagogique `ansu_naivety` est calculé **après** le graphe métier. 
 
 ## 4. Matrice d’évaluation
 
-| ID | Critère | Question |
-|---|---|---|
-| B1 | Self-host / souveraineté | Peut-on l’héberger proprement sur infra maîtrisée ? Licence compatible ? |
-| B2 | Intégrations runtime | Python, TypeScript, LangChain/LangGraph, Mastra, instrumentation manuelle ? |
-| B3 | Traces agentiques | Trace hiérarchique lisible par tour/session avec spans agent/tool/guardrail ? |
-| B4 | Scores / evals | Scores custom, LLM-as-judge, datasets, replay/non-régression ? |
-| B5 | Structured outputs | Peut-on stocker/filtrer/exporter les JSON métier ? |
-| B6 | Albert coûts/impacts | Peut-on tracer tokens, coûts, impacts kWh/kgCO2eq et les exploiter ? |
-| B7 | Prompt/versioning | Prompt registry, versions, tags, variables ? |
-| B8 | Portabilité | Export, API, séparation source de vérité AnSu vs outil ? |
-| B9 | DX | Câblage clair local/prod, Python, TypeScript, UI utile ? |
-| B10 | Production technique | Peut-on exploiter l’outil techniquement en production ? |
-| B11 | Accès équipe / droits | Peut-on gérer facilement les accès des membres de l’équipe ? |
+| ID  | Critère                  | Question                                                                      |
+| --- | ------------------------ | ----------------------------------------------------------------------------- |
+| B1  | Self-host / souveraineté | Peut-on l’héberger proprement sur infra maîtrisée ? Licence compatible ?      |
+| B2  | Intégrations runtime     | Python, TypeScript, LangChain/LangGraph, Mastra, instrumentation manuelle ?   |
+| B3  | Traces agentiques        | Trace hiérarchique lisible par tour/session avec spans agent/tool/guardrail ? |
+| B4  | Scores / evals           | Scores custom, LLM-as-judge, datasets, replay/non-régression ?                |
+| B5  | Structured outputs       | Peut-on stocker/filtrer/exporter les JSON métier ?                            |
+| B6  | Albert coûts/impacts     | Peut-on tracer tokens, coûts, impacts kWh/kgCO2eq et les exploiter ?          |
+| B7  | Prompt/versioning        | Prompt registry, versions, tags, variables ?                                  |
+| B8  | Portabilité              | Export, API, séparation source de vérité AnSu vs outil ?                      |
+| B9  | DX                       | Câblage clair local/prod, Python, TypeScript, UI utile ?                      |
+| B10 | Production technique     | Peut-on exploiter l’outil techniquement en production ?                       |
+| B11 | Accès équipe / droits    | Peut-on gérer facilement les accès des membres de l’équipe ?                  |
 
 ## 5. Validation question par question
 
@@ -92,10 +92,10 @@ Le score pédagogique `ansu_naivety` est calculé **après** le graphe métier. 
 
 Réponse courte : les trois outils sont lançables en local/self-host. Les différences portent surtout sur la licence et la lourdeur d’exploitation.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé | Self-host simple dans le POC. Licence Apache 2.0. Pas de blocage identifié pour un usage interne AnSu. |
-| Phoenix | Validé avec réserve licence | Self-host validé dans le POC. Licence Elastic License 2.0 : acceptable pour un usage interne probable, mais à valider juridiquement selon l’usage final. |
+| Outil    | Statut                                | Synthèse                                                                                                                                                                                 |
+| -------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé                                | Self-host simple dans le POC. Licence Apache 2.0. Pas de blocage identifié pour un usage interne AnSu.                                                                                   |
+| Phoenix  | Validé avec réserve licence           | Self-host validé dans le POC. Licence Elastic License 2.0 : acceptable pour un usage interne probable, mais à valider juridiquement selon l’usage final.                                 |
 | Langfuse | Validé avec réserve infra / open-core | Self-host validé dans le POC. Le cœur est sous licence MIT, mais certaines fonctions Enterprise sont sous licence commerciale. Stack plus lourde : Postgres, ClickHouse, Redis et MinIO. |
 
 Éléments observés :
@@ -119,11 +119,11 @@ Réponse courte : les trois outils ont été testés avec **LangGraph Python**, 
 
 Cette validation ne veut pas dire que tous les runtimes possibles sont validés. Si AnSu choisit finalement Mastra, LangGraph TypeScript ou un runtime custom, il faudra refaire une passe d’intégration dédiée.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé sur LangGraph Python | Intégration native via `mlflow.langchain.autolog()`. Les traces LangGraph et les appels tools remontent dans MLflow. À revalider si runtime TypeScript ou Mastra. |
-| Phoenix | Validé sur LangGraph Python | Intégration native via OpenTelemetry/Phoenix avec auto-instrumentation. Les traces LangGraph et les appels tools remontent dans Phoenix. À revalider si runtime TypeScript ou Mastra. |
-| Langfuse | Validé sur LangGraph Python | Intégration via callback LangChain/LangGraph. Les traces, tool calls et scores peuvent être rattachés à la trace Langfuse. À revalider si runtime TypeScript ou Mastra. |
+| Outil    | Statut                      | Synthèse                                                                                                                                                                              |
+| -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé sur LangGraph Python | Intégration native via `mlflow.langchain.autolog()`. Les traces LangGraph et les appels tools remontent dans MLflow. À revalider si runtime TypeScript ou Mastra.                     |
+| Phoenix  | Validé sur LangGraph Python | Intégration native via OpenTelemetry/Phoenix avec auto-instrumentation. Les traces LangGraph et les appels tools remontent dans Phoenix. À revalider si runtime TypeScript ou Mastra. |
+| Langfuse | Validé sur LangGraph Python | Intégration via callback LangChain/LangGraph. Les traces, tool calls et scores peuvent être rattachés à la trace Langfuse. À revalider si runtime TypeScript ou Mastra.               |
 
 Constat visuel important :
 
@@ -162,30 +162,30 @@ agent_turn
   └─ final_response
 ```
 
-| Outil | Statut | Synthèse | Captures |
-|---|---|---|---|
-| MLflow | Validé | La trace hiérarchique est lisible. La structure LangGraph ressort bien : `llm_call`, `tool_node`, `searchKnowledge`, second `llm_call`. | [liste](./assets/screenshots/2026-06-23__B3__mlflow__traces-list__langgraph-python-mistral.png), [détail](./assets/screenshots/2026-06-23__B3__mlflow__trace-detail__langgraph-python-mistral.png) |
-| Phoenix | Partiel | Les traces remontent et les spans existent, mais l’interface ne rend pas vraiment le graphe LangGraph. Pour comprendre le déroulé agentique, la lecture est moins directe. | [liste](./assets/screenshots/2026-06-23__B3__phoenix__traces-list__langgraph-python-mistral.png), [détail](./assets/screenshots/2026-06-23__B3__phoenix__trace-detail__langgraph-python-mistral.png) |
-| Langfuse | Validé | La trace est lisible et orientée produit LLM. Les observations permettent de suivre le tour, les générations et le tool call. | [liste](./assets/screenshots/2026-06-23__B3__langfuse__traces-list__langgraph-python-mistral.png), [détail](./assets/screenshots/2026-06-23__B3__langfuse__trace-detail__langgraph-python-mistral.png) |
+| Outil    | Statut  | Synthèse                                                                                                                                                                   | Captures                                                                                                                                                                                               |
+| -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MLflow   | Validé  | La trace hiérarchique est lisible. La structure LangGraph ressort bien : `llm_call`, `tool_node`, `searchKnowledge`, second `llm_call`.                                    | [liste](./assets/screenshots/2026-06-23__B3__mlflow__traces-list__langgraph-python-mistral.png), [détail](./assets/screenshots/2026-06-23__B3__mlflow__trace-detail__langgraph-python-mistral.png)     |
+| Phoenix  | Partiel | Les traces remontent et les spans existent, mais l’interface ne rend pas vraiment le graphe LangGraph. Pour comprendre le déroulé agentique, la lecture est moins directe. | [liste](./assets/screenshots/2026-06-23__B3__phoenix__traces-list__langgraph-python-mistral.png), [détail](./assets/screenshots/2026-06-23__B3__phoenix__trace-detail__langgraph-python-mistral.png)   |
+| Langfuse | Validé  | La trace est lisible et orientée produit LLM. Les observations permettent de suivre le tour, les générations et le tool call.                                              | [liste](./assets/screenshots/2026-06-23__B3__langfuse__traces-list__langgraph-python-mistral.png), [détail](./assets/screenshots/2026-06-23__B3__langfuse__trace-detail__langgraph-python-mistral.png) |
 
 Captures :
 
 #### MLflow
 
-| Liste des traces | Détail d’une trace |
-|---|---|
+| Liste des traces                                                                                                                   | Détail d’une trace                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ![B3 — MLflow, liste des traces LangGraph](./assets/screenshots/2026-06-23__B3__mlflow__traces-list__langgraph-python-mistral.png) | ![B3 — MLflow, détail d’une trace LangGraph avec tool call](./assets/screenshots/2026-06-23__B3__mlflow__trace-detail__langgraph-python-mistral.png) |
 
 #### Phoenix
 
-| Liste des traces | Détail d’une trace |
-|---|---|
+| Liste des traces                                                                                                           | Détail d’une trace                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | ![B3 — Phoenix, liste des traces](./assets/screenshots/2026-06-23__B3__phoenix__traces-list__langgraph-python-mistral.png) | ![B3 — Phoenix, détail d’une trace](./assets/screenshots/2026-06-23__B3__phoenix__trace-detail__langgraph-python-mistral.png) |
 
 #### Langfuse
 
-| Liste des traces | Détail d’une trace |
-|---|---|
+| Liste des traces                                                                                                                       | Détail d’une trace                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ![B3 — Langfuse, liste des traces LangGraph](./assets/screenshots/2026-06-23__B3__langfuse__traces-list__langgraph-python-mistral.png) | ![B3 — Langfuse, détail d’une trace LangGraph avec tool call](./assets/screenshots/2026-06-23__B3__langfuse__trace-detail__langgraph-python-mistral.png) |
 
 Conclusion B3 :
@@ -205,20 +205,20 @@ Réponse courte : oui, les trois outils couvrent les deux besoins : afficher des
 
 Un score sert à qualifier un tour précis, par exemple : “l’agent a-t-il respecté le contrat de naïveté pédagogique ?”.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé, mais moins lisible | Le score peut être remonté dans les traces / évaluations. En revanche, il est moins directement mis en avant dans l’interface et demande plus d’effort pour relier le score au tour agentique analysé. |
-| Phoenix | Validé, mais moins lisible | Le score peut être représenté via spans / attributs d’évaluation. Mais il reste assez dissocié de la lecture principale de la trace, ce qui rend l’analyse moins fluide. |
-| Langfuse | Validé | Le score est le mieux intégré visuellement. Il est rattaché à la trace et clairement mis en avant dans l’interface. C’est le plus confortable pour analyser rapidement si un tour respecte le contrat pédagogique. |
+| Outil    | Statut                     | Synthèse                                                                                                                                                                                                           |
+| -------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MLflow   | Validé, mais moins lisible | Le score peut être remonté dans les traces / évaluations. En revanche, il est moins directement mis en avant dans l’interface et demande plus d’effort pour relier le score au tour agentique analysé.             |
+| Phoenix  | Validé, mais moins lisible | Le score peut être représenté via spans / attributs d’évaluation. Mais il reste assez dissocié de la lecture principale de la trace, ce qui rend l’analyse moins fluide.                                           |
+| Langfuse | Validé                     | Le score est le mieux intégré visuellement. Il est rattaché à la trace et clairement mis en avant dans l’interface. C’est le plus confortable pour analyser rapidement si un tour respecte le contrat pédagogique. |
 
 #### Datasets et campagnes d’évaluation
 
 Un dataset sert à conserver des cas de test, puis à rejouer ces cas pour comparer plusieurs versions d’agent, de prompt ou de modèle.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé | Permet de constituer des datasets et de lancer des évaluations. C’est un point fort historique de MLflow, notamment pour les usages expérimentation, comparaison et non-régression. |
-| Phoenix | Validé | Permet de créer des datasets à partir de traces et de lancer des évaluations. L’approche est utile, mais reste plus orientée analyse technique. |
+| Outil    | Statut                         | Synthèse                                                                                                                                                                                     |
+| -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé                         | Permet de constituer des datasets et de lancer des évaluations. C’est un point fort historique de MLflow, notamment pour les usages expérimentation, comparaison et non-régression.          |
+| Phoenix  | Validé                         | Permet de créer des datasets à partir de traces et de lancer des évaluations. L’approche est utile, mais reste plus orientée analyse technique.                                              |
 | Langfuse | Validé, avec avantage pratique | Permet de créer des datasets à partir de traces et de lancer des évaluations. L’interface est lisible et la banque d’évaluateurs prédéfinis accélère le paramétrage des premières campagnes. |
 
 C’est important pour AnSu : les cas réels intéressants pourront devenir des jeux de non-régression pour comparer plusieurs versions d’agent ou de prompt.
@@ -247,11 +247,11 @@ Le cas testé est une évaluation structurée de transcript, avec un objet `Noti
 - l’indication `readyForNextStep` ;
 - la méthode de génération / validation.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé | La sortie structurée est bien stockée et relisible. L’interface permet de retrouver l’objet, mais la lecture reste assez technique. Lisibilité correcte, derrière Langfuse. |
-| Phoenix | Validé, mais moins lisible | La sortie structurée est bien présente, mais elle est moins mise en valeur dans l’interface. La lecture demande plus d’effort, surtout pour une personne non spécialiste de l’outil. |
-| Langfuse | Validé | La sortie structurée est la plus lisible. L’objet est plus facile à retrouver et à comprendre dans le contexte de la trace. C’est l’expérience la plus confortable pour analyser rapidement le résultat métier. |
+| Outil    | Statut                     | Synthèse                                                                                                                                                                                                        |
+| -------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé                     | La sortie structurée est bien stockée et relisible. L’interface permet de retrouver l’objet, mais la lecture reste assez technique. Lisibilité correcte, derrière Langfuse.                                     |
+| Phoenix  | Validé, mais moins lisible | La sortie structurée est bien présente, mais elle est moins mise en valeur dans l’interface. La lecture demande plus d’effort, surtout pour une personne non spécialiste de l’outil.                            |
+| Langfuse | Validé                     | La sortie structurée est la plus lisible. L’objet est plus facile à retrouver et à comprendre dans le contexte de la trace. C’est l’expérience la plus confortable pour analyser rapidement le résultat métier. |
 
 Classement de lisibilité observé :
 
@@ -272,11 +272,11 @@ Phoenix fonctionne, mais la lecture est la moins confortable.
 
 Réponse courte : les tokens sont correctement visibles dans MLflow et Langfuse. Dans Phoenix, ils ne remontent pas correctement pour le moment, probablement à cause d’un câblage OpenTelemetry à ajuster. Les coûts et impacts Albert sont bien récupérés par le runtime, mais ne sont pas encore affichés clairement dans les dashboards.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Partiel, bon sur tokens | Les tokens ressortent correctement dans l’interface. Les champs Albert spécifiques (`cost`, `impacts.kWh`, `impacts.kgCO2eq`) sont récupérés côté runtime, mais doivent être poussés explicitement en metadata custom pour être plus lisibles. |
-| Phoenix | Partiel | Les données existent côté runtime, mais les tokens ne remontent pas correctement dans l’interface pour le moment. C’est probablement un sujet de mapping / câblage OpenTelemetry. Les champs coût et impact devront aussi passer par des attributs custom. |
-| Langfuse | Partiel, bon sur tokens | Les tokens ressortent correctement dans l’interface, au même niveau que MLflow. Les champs coût et impact Albert peuvent être ajoutés via metadata custom, et éventuellement via `usage_details` / `cost_details` pour la partie usage/coût. |
+| Outil    | Statut                  | Synthèse                                                                                                                                                                                                                                                   |
+| -------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Partiel, bon sur tokens | Les tokens ressortent correctement dans l’interface. Les champs Albert spécifiques (`cost`, `impacts.kWh`, `impacts.kgCO2eq`) sont récupérés côté runtime, mais doivent être poussés explicitement en metadata custom pour être plus lisibles.             |
+| Phoenix  | Partiel                 | Les données existent côté runtime, mais les tokens ne remontent pas correctement dans l’interface pour le moment. C’est probablement un sujet de mapping / câblage OpenTelemetry. Les champs coût et impact devront aussi passer par des attributs custom. |
+| Langfuse | Partiel, bon sur tokens | Les tokens ressortent correctement dans l’interface, au même niveau que MLflow. Les champs coût et impact Albert peuvent être ajoutés via metadata custom, et éventuellement via `usage_details` / `cost_details` pour la partie usage/coût.               |
 
 Le câblage coût / impact Albert ne semble pas bloquant. Les trois outils permettent d’ajouter des métadonnées custom :
 
@@ -315,11 +315,11 @@ Le besoin AnSu n’est pas seulement de stocker un texte de prompt. Il faut pouv
 - relier une version de prompt aux traces et aux évaluations ;
 - faire évoluer un prompt sans perdre l’historique.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé | Gère les prompts et le versioning. Solide pour une logique d’expérimentation, de comparaison et de non-régression. L’expérience reste plus orientée engineering. |
-| Phoenix | Validé fort | Sur ce point, Phoenix est le mieux intégré. Son gestionnaire de prompts propose davantage de fonctionnalités et se révèle plus agréable à utiliser que les autres. |
-| Langfuse | Validé | Gère les prompts, le versioning et les variables. L’expérience est claire et cohérente avec le reste de l’outil, mais moins riche que Phoenix sur ce point précis. |
+| Outil    | Statut      | Synthèse                                                                                                                                                           |
+| -------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MLflow   | Validé      | Gère les prompts et le versioning. Solide pour une logique d’expérimentation, de comparaison et de non-régression. L’expérience reste plus orientée engineering.   |
+| Phoenix  | Validé fort | Sur ce point, Phoenix est le mieux intégré. Son gestionnaire de prompts propose davantage de fonctionnalités et se révèle plus agréable à utiliser que les autres. |
+| Langfuse | Validé      | Gère les prompts, le versioning et les variables. L’expérience est claire et cohérente avec le reste de l’outil, mais moins riche que Phoenix sur ce point précis. |
 
 Conclusion B7 :
 
@@ -336,11 +336,11 @@ Réponse courte : oui, les trois plateformes proposent des APIs permettant de r�
 
 Pour AnSu, le point clé est de ne pas faire de l’outil observability la source de vérité métier. Les traces doivent rester reliées à AnSu via des IDs stables : `sessionId`, `userId`, `agentVersion`, `promptVersion`, `runId`, etc.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé | Très bon côté APIs Python et logique MLOps : `search_traces`, `search_runs`, `search_experiments`, prompt registry. Les données sont faciles à extraire pour une équipe technique, notamment en DataFrame / JSON. Le modèle reste toutefois spécifique à MLflow. |
-| Phoenix | Validé fort sur portabilité data | C’est le plus standard dans sa donnée : traces/spans OpenTelemetry, conventions OpenInference, API REST documentée, exports datasets en CSV / JSONL, formats OpenAI evals / fine-tuning, exports experiments en CSV / JSON. Moins agréable en UI, mais très bon pour éviter le lock-in data. |
-| Langfuse | Validé | API publique claire pour traces, scores, datasets et prompts. Très pratique pour un usage produit observability. Le modèle de données est plus spécifique à Langfuse, donc il faut éviter de faire dépendre AnSu directement de ses objets internes. |
+| Outil    | Statut                           | Synthèse                                                                                                                                                                                                                                                                                     |
+| -------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé                           | Très bon côté APIs Python et logique MLOps : `search_traces`, `search_runs`, `search_experiments`, prompt registry. Les données sont faciles à extraire pour une équipe technique, notamment en DataFrame / JSON. Le modèle reste toutefois spécifique à MLflow.                             |
+| Phoenix  | Validé fort sur portabilité data | C’est le plus standard dans sa donnée : traces/spans OpenTelemetry, conventions OpenInference, API REST documentée, exports datasets en CSV / JSONL, formats OpenAI evals / fine-tuning, exports experiments en CSV / JSON. Moins agréable en UI, mais très bon pour éviter le lock-in data. |
+| Langfuse | Validé                           | API publique claire pour traces, scores, datasets et prompts. Très pratique pour un usage produit observability. Le modèle de données est plus spécifique à Langfuse, donc il faut éviter de faire dépendre AnSu directement de ses objets internes.                                         |
 
 Éléments vérifiés :
 
@@ -363,11 +363,11 @@ Dans tous les cas, AnSu doit garder sa propre base métier comme source de véri
 
 Réponse courte : les trois intégrations sont faisables, mais elles ne demandent pas le même type d’effort. La question ici est de savoir ce qui sera le plus simple à brancher, comprendre, débugger et maintenir dans la durée.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé | Intégration LangGraph/LangChain assez directe. Peu d’infra à maintenir comparé à Langfuse. Bon choix pour les développeurs, mais moins immédiat pour une personne produit : il faut souvent ouvrir les détails techniques d’une trace pour comprendre ce qui s’est passé. |
-| Phoenix | Partiel | Base très standard grâce à OpenTelemetry / OpenInference, mais demande plus de réglages pour que les bonnes données ressortent clairement. Exemple : les tokens Albert ne remontent pas encore correctement dans l’interface. |
-| Langfuse | Validé avec réserve infra | SDK et API pratiques pour une app LLM : traces, metadata, scores et sorties structurées sont assez simples à pousser. En revanche, l’infra self-host est la plus lourde : Postgres, ClickHouse, Redis, MinIO, worker, web. |
+| Outil    | Statut                    | Synthèse                                                                                                                                                                                                                                                                  |
+| -------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé                    | Intégration LangGraph/LangChain assez directe. Peu d’infra à maintenir comparé à Langfuse. Bon choix pour les développeurs, mais moins immédiat pour une personne produit : il faut souvent ouvrir les détails techniques d’une trace pour comprendre ce qui s’est passé. |
+| Phoenix  | Partiel                   | Base très standard grâce à OpenTelemetry / OpenInference, mais demande plus de réglages pour que les bonnes données ressortent clairement. Exemple : les tokens Albert ne remontent pas encore correctement dans l’interface.                                             |
+| Langfuse | Validé avec réserve infra | SDK et API pratiques pour une app LLM : traces, metadata, scores et sorties structurées sont assez simples à pousser. En revanche, l’infra self-host est la plus lourde : Postgres, ClickHouse, Redis, MinIO, worker, web.                                                |
 
 Lecture par type d’effort :
 
@@ -390,10 +390,10 @@ Phoenix rassure côté standards, mais demande plus de travail de câblage fin.
 
 Réponse courte : les trois outils sont exploitables, mais pas avec le même coût infra.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé | Stack la plus simple : un serveur MLflow, un stockage à cadrer, et l’interface. C’est le plus léger à opérer techniquement. |
-| Phoenix | Validé avec cadrage production | Stack plutôt légère aussi. Le point d’attention principal est le bon câblage des données envoyées : traces, tokens, metadata, scores. |
+| Outil    | Statut                          | Synthèse                                                                                                                                                   |
+| -------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé                          | Stack la plus simple : un serveur MLflow, un stockage à cadrer, et l’interface. C’est le plus léger à opérer techniquement.                                |
+| Phoenix  | Validé avec cadrage production  | Stack plutôt légère aussi. Le point d’attention principal est le bon câblage des données envoyées : traces, tokens, metadata, scores.                      |
 | Langfuse | Validé avec réserve infra forte | Stack la plus lourde : application web, worker, base relationnelle, base analytique, cache et stockage objet. Plus complet, mais plus coûteux à exploiter. |
 
 Conclusion B10 :
@@ -408,11 +408,11 @@ Langfuse est le plus complet, mais aussi le plus lourd côté infra.
 
 Réponse courte : oui, les trois plateformes permettent de gérer des accès utilisateurs et des droits. À ce stade, seul Langfuse a été testé réellement dans le POC, car la gestion des utilisateurs y est activée par défaut. Pour MLflow et Phoenix, la validation repose sur la documentation.
 
-| Outil | Statut | Synthèse |
-|---|---|---|
-| MLflow | Validé sur documentation | La documentation MLflow décrit une authentification avec utilisateurs, rôles et permissions. Ce n’est pas activé dans notre configuration locale actuelle : il faut lancer MLflow avec l’application `basic-auth` et installer les dépendances nécessaires. |
-| Phoenix | Validé sur documentation | Phoenix documente une gestion des accès et des droits. Le POC local n’a pas été configuré pour tester finement ces droits. À valider dans la configuration cible si Phoenix est retenu. |
-| Langfuse | Validé en POC | La gestion des utilisateurs est disponible directement dans l’interface testée. Langfuse permet de gérer les membres et les droits de manière plus immédiate dans notre installation locale. |
+| Outil    | Statut                   | Synthèse                                                                                                                                                                                                                                                    |
+| -------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MLflow   | Validé sur documentation | La documentation MLflow décrit une authentification avec utilisateurs, rôles et permissions. Ce n’est pas activé dans notre configuration locale actuelle : il faut lancer MLflow avec l’application `basic-auth` et installer les dépendances nécessaires. |
+| Phoenix  | Validé sur documentation | Phoenix documente une gestion des accès et des droits. Le POC local n’a pas été configuré pour tester finement ces droits. À valider dans la configuration cible si Phoenix est retenu.                                                                     |
+| Langfuse | Validé en POC            | La gestion des utilisateurs est disponible directement dans l’interface testée. Langfuse permet de gérer les membres et les droits de manière plus immédiate dans notre installation locale.                                                                |
 
 Point à investiguer plus tard : si AnSu a besoin d’un SSO, notamment Keycloak / OIDC, il faudra vérifier précisément la solution choisie. Les fonctionnalités SSO ou RBAC avancées peuvent dépendre du mode de déploiement ou d’une édition payante selon l’outil.
 
@@ -429,21 +429,21 @@ Le SSO / Keycloak devra être étudié séparément une fois l’outil choisi.
 
 Cette synthèse ne reprend pas tout le détail des questions B1 à B11. Elle sert à faire ressortir la lecture décisionnelle.
 
-| Outil | Ce qu’il fait le mieux | Ce qui coûte / limite | Lecture finale |
-|---|---|---|---|
-| Langfuse | Lecture quotidienne des traces agentiques, scores bien visibles, sorties structurées lisibles, expérience confortable pour l’équipe. | Infra la plus lourde à opérer. SSO / droits avancés à vérifier si besoin. | Favori pour l’observability agentique produit du POC. |
-| MLflow | Simplicité infra, analyses automatisées par les développeurs, évaluations, non-régression, exports. | Moins immédiat pour une lecture produit. Les scores et sorties structurées demandent plus d’effort de lecture. | Candidat solide pour evals / non-régression / infra simple. |
-| Phoenix | Données standards, exports, portabilité, très bon gestionnaire de prompts. | Traces agentiques moins lisibles, graphe LangGraph peu restitué visuellement, câblage tokens/metadata à affiner. | Très bon socle data, moins convaincant comme outil de lecture quotidienne des traces. |
+| Outil    | Ce qu’il fait le mieux                                                                                                               | Ce qui coûte / limite                                                                                            | Lecture finale                                                                        |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Langfuse | Lecture quotidienne des traces agentiques, scores bien visibles, sorties structurées lisibles, expérience confortable pour l’équipe. | Infra la plus lourde à opérer. SSO / droits avancés à vérifier si besoin.                                        | Favori pour l’observability agentique produit du POC.                                 |
+| MLflow   | Simplicité infra, analyses automatisées par les développeurs, évaluations, non-régression, exports.                                  | Moins immédiat pour une lecture produit. Les scores et sorties structurées demandent plus d’effort de lecture.   | Candidat solide pour evals / non-régression / infra simple.                           |
+| Phoenix  | Données standards, exports, portabilité, très bon gestionnaire de prompts.                                                           | Traces agentiques moins lisibles, graphe LangGraph peu restitué visuellement, câblage tokens/metadata à affiner. | Très bon socle data, moins convaincant comme outil de lecture quotidienne des traces. |
 
 Classement par usage :
 
-| Usage prioritaire | 1er choix | 2e choix | 3e choix |
-|---|---|---|---|
-| Lire rapidement ce qu’a fait l’agent | Langfuse | MLflow | Phoenix |
-| Exploiter / exporter les données | Phoenix | MLflow | Langfuse |
-| Limiter l’effort infra | MLflow | Phoenix | Langfuse |
-| Gérer les prompts et leurs versions | Phoenix | Langfuse | MLflow |
-| Lancer des evals et jeux de non-régression | Langfuse / MLflow | Phoenix | — |
+| Usage prioritaire                          | 1er choix         | 2e choix | 3e choix |
+| ------------------------------------------ | ----------------- | -------- | -------- |
+| Lire rapidement ce qu’a fait l’agent       | Langfuse          | MLflow   | Phoenix  |
+| Exploiter / exporter les données           | Phoenix           | MLflow   | Langfuse |
+| Limiter l’effort infra                     | MLflow            | Phoenix  | Langfuse |
+| Gérer les prompts et leurs versions        | Phoenix           | Langfuse | MLflow   |
+| Lancer des evals et jeux de non-régression | Langfuse / MLflow | Phoenix  | —        |
 
 Lecture synthétique :
 

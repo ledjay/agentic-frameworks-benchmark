@@ -1,6 +1,6 @@
 # Phoenix + LangChain demo
 
-Objectif : tester **Arize Phoenix** comme socle d'observabilité/evals LLM pour AnSu v2, branché sur une app **LangChain** minimale.
+Objectif : tester **Arize Phoenix** comme socle d'observabilité/evals LLM pour AnSu v5, branché sur une app **LangChain** minimale.
 
 Hypothèse : Phoenix n'est pas le framework agentique principal. C'est plutôt une brique transverse : traces, datasets, experiments, evals, prompt management.
 

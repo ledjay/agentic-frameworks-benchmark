@@ -1,4 +1,4 @@
-# Synthèse runtimes agentiques — AnSu v2
+# Synthèse runtimes agentiques — AnSu v5
 
 > Statut : document de partage et de prise de décision.  
 > Objet : comparer **Mastra**, **LangChain** et **LangGraph** comme moteurs possibles pour le POC agentique AnSu.
@@ -116,17 +116,17 @@ LangGraph = meilleur candidat si priorité aux workflows complexes, au contrôle
 
 ## 6. Comparatif synthétique
 
-| Critère | Mastra | LangChain | LangGraph |
-|---|---|---|---|
-| Stack | TypeScript natif | Python mature, TypeScript possible | Python mature, TypeScript possible |
-| Mise en œuvre initiale | Simple et lisible | Simple pour flux linéaires | Plus complexe |
-| Workflows simples | Très bon | Très bon | Possible, mais plus lourd |
-| Workflows complexes | Possible, mais plus de câblage | Moins adapté seul | Très bon |
-| Tools | Bon support | Très bon support | Très bon support |
-| Scores / evals | Faisable | Faisable | Faisable |
-| Observability | Faisable via outils externes | Très bon écosystème | Très bon écosystème |
-| Lisibilité code | Très bonne | Bonne sur cas simples | Plus exigeante |
-| Maturité écosystème | Plus jeune | Très mature | Très mature |
+| Critère                | Mastra                         | LangChain                          | LangGraph                          |
+| ---------------------- | ------------------------------ | ---------------------------------- | ---------------------------------- |
+| Stack                  | TypeScript natif               | Python mature, TypeScript possible | Python mature, TypeScript possible |
+| Mise en œuvre initiale | Simple et lisible              | Simple pour flux linéaires         | Plus complexe                      |
+| Workflows simples      | Très bon                       | Très bon                           | Possible, mais plus lourd          |
+| Workflows complexes    | Possible, mais plus de câblage | Moins adapté seul                  | Très bon                           |
+| Tools                  | Bon support                    | Très bon support                   | Très bon support                   |
+| Scores / evals         | Faisable                       | Faisable                           | Faisable                           |
+| Observability          | Faisable via outils externes   | Très bon écosystème                | Très bon écosystème                |
+| Lisibilité code        | Très bonne                     | Bonne sur cas simples              | Plus exigeante                     |
+| Maturité écosystème    | Plus jeune                     | Très mature                        | Très mature                        |
 
 ## 7. Recommandation provisoire
 

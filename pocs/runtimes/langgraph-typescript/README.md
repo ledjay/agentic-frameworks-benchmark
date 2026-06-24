@@ -1,6 +1,6 @@
 # LangGraph TypeScript Runtime POC
 
-Runtime backend LangGraph.js minimal pour le benchmark AnSu v2.
+Runtime backend LangGraph.js minimal pour le benchmark AnSu v5.
 
 ## Rôle
 

@@ -1,29 +1,29 @@
 # Évaluation provisoire — Arize Phoenix
-> **Statut : POC historique.** Ce document ne vaut pas validation dans la nouvelle grille observability/evals. Phoenix doit être repassé avec `docs/benchmark-agentique/TRACES_PRIORITAIRES.md`.
 
+> **Statut : POC historique.** Ce document ne vaut pas validation dans la nouvelle grille observability/evals. Phoenix doit être repassé avec `docs/benchmark-agentique/TRACES_PRIORITAIRES.md`.
 
 ## Verdict court
 
 Phoenix semble être une **très bonne brique d'observabilité/evals LLM**, mais pas un framework agentique complet.
 
-Pour AnSu v2, il faut l'évaluer comme un composant à brancher sur LangChain, Vercel AI SDK, Mastra, LangGraph, etc., pas comme le moteur métier unique.
+Pour AnSu v5, il faut l'évaluer comme un composant à brancher sur LangChain, Vercel AI SDK, Mastra, LangGraph, etc., pas comme le moteur métier unique.
 
 ## Fit avec le POC AnSu
 
-| Critère | Évaluation provisoire |
-| --- | --- |
-| Un seul agent | Oui, via instrumentation du framework agentique choisi. Phoenix observe, il n'orchestre pas. |
-| Modération in/out | Pas le cœur produit, mais spans `GUARDRAIL` et evals permettent de tracer/modéliser les décisions. Intégration Guardrails mentionnée côté OpenInference. |
-| Observabilité | Très fort : OpenTelemetry/OpenInference natif, UI dédiée aux traces LLM. |
-| UI produit vs UI profs | L'UI Phoenix serait réservée à la team produit pour inspecter/debugger. Les profs auront un dashboard Next.js spécifique. |
-| API pour dashboard Next.js | Critère critique : l'API doit permettre de lire traces/spans/sessions, créer/lire annotations/evals/feedback, exploiter datasets/experiments et exposer ces données dans notre propre dashboard. |
-| Evals | Très fort côté Python ; TypeScript existe mais indiqué alpha côté `@arizeai/phoenix-evals`. |
-| OpenTelemetry -> Grafana | Bon potentiel : ingestion OTLP HTTP/gRPC, serveur instrumentable, Prometheus possible. Pour Grafana Tempo, prévoir fan-out via OTel Collector. |
-| Provider flexibility | Bon : Phoenix observe des spans standard. Mistral/OpenAI/LiteLLM/Bedrock/etc. supportés via instrumentations ou wrappers. |
-| Versioning agent | Pas directement versioning d'agent complet ; plutôt datasets, experiments, prompt management/tags. À compléter par conventions applicatives. |
-| Multi-agents futur | Observable via spans agent/tool/chain ; orchestration externe nécessaire. |
-| Compatibilité DevSecOps Thomas | Docker/Kubernetes/Helm possibles, env vars claires, Prometheus possible. À valider avec contraintes de stack et persistance Postgres/SQLite. |
-| Open source | Source disponible mais licence **Elastic License 2.0**, donc pas OSS permissif Apache/MIT. Self-host possible. Cloud Arize optionnel. |
+| Critère                        | Évaluation provisoire                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Un seul agent                  | Oui, via instrumentation du framework agentique choisi. Phoenix observe, il n'orchestre pas.                                                                                                     |
+| Modération in/out              | Pas le cœur produit, mais spans `GUARDRAIL` et evals permettent de tracer/modéliser les décisions. Intégration Guardrails mentionnée côté OpenInference.                                         |
+| Observabilité                  | Très fort : OpenTelemetry/OpenInference natif, UI dédiée aux traces LLM.                                                                                                                         |
+| UI produit vs UI profs         | L'UI Phoenix serait réservée à la team produit pour inspecter/debugger. Les profs auront un dashboard Next.js spécifique.                                                                        |
+| API pour dashboard Next.js     | Critère critique : l'API doit permettre de lire traces/spans/sessions, créer/lire annotations/evals/feedback, exploiter datasets/experiments et exposer ces données dans notre propre dashboard. |
+| Evals                          | Très fort côté Python ; TypeScript existe mais indiqué alpha côté `@arizeai/phoenix-evals`.                                                                                                      |
+| OpenTelemetry -> Grafana       | Bon potentiel : ingestion OTLP HTTP/gRPC, serveur instrumentable, Prometheus possible. Pour Grafana Tempo, prévoir fan-out via OTel Collector.                                                   |
+| Provider flexibility           | Bon : Phoenix observe des spans standard. Mistral/OpenAI/LiteLLM/Bedrock/etc. supportés via instrumentations ou wrappers.                                                                        |
+| Versioning agent               | Pas directement versioning d'agent complet ; plutôt datasets, experiments, prompt management/tags. À compléter par conventions applicatives.                                                     |
+| Multi-agents futur             | Observable via spans agent/tool/chain ; orchestration externe nécessaire.                                                                                                                        |
+| Compatibilité DevSecOps Thomas | Docker/Kubernetes/Helm possibles, env vars claires, Prometheus possible. À valider avec contraintes de stack et persistance Postgres/SQLite.                                                     |
+| Open source                    | Source disponible mais licence **Elastic License 2.0**, donc pas OSS permissif Apache/MIT. Self-host possible. Cloud Arize optionnel.                                                            |
 
 ## Points forts
 

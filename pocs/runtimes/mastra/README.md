@@ -1,4 +1,4 @@
-# POC Mastra Runtime + Next — AnSu v2
+# POC Mastra Runtime + Next — AnSu v5
 
 Ce POC teste Mastra comme **runtime agentique** pour AnSu : agent multi-tour, mémoire native, Studio, scorers, observability native et stockage local. Le dashboard Next consomme une façade API locale plutôt que l’API Mastra directement.
 
@@ -26,14 +26,14 @@ npm run dev
 
 URLs :
 
-| Service | URL |
-|---|---|
-| Mastra Server/API | http://localhost:4111 |
-| Mastra Studio + proxy | http://localhost:4112 |
-| Dashboard Next AnSu | http://localhost:3009 |
-| Agents API | http://localhost:4111/api/agents |
-| Traces API | http://localhost:4111/api/observability/traces |
-| Scorers API | http://localhost:4111/api/scores/scorers |
+| Service               | URL                                            |
+| --------------------- | ---------------------------------------------- |
+| Mastra Server/API     | http://localhost:4111                          |
+| Mastra Studio + proxy | http://localhost:4112                          |
+| Dashboard Next AnSu   | http://localhost:3009                          |
+| Agents API            | http://localhost:4111/api/agents               |
+| Traces API            | http://localhost:4111/api/observability/traces |
+| Scorers API           | http://localhost:4111/api/scores/scorers       |
 
 ## Lancement Docker recommandé
 
@@ -78,15 +78,15 @@ task mastra:seed
 
 ## Fichiers importants
 
-| Fichier | Rôle |
-|---|---|
-| `src/mastra/index.ts` | Configuration Mastra : storage LibSQL, observability, agent, scorer. |
-| `src/mastra/agents/naive-agent.ts` | Agent naïf AnSu + configuration `Memory`. |
-| `src/mastra/scorers/naivety-contract.ts` | Scorer Mastra custom. |
-| `src/lib/ansu-contract.ts` | Contrat métier partagé : prompt, mock, guardrails, score. |
-| `app/page.tsx` | Dashboard Next. |
-| `app/api/agent/route.ts` | API Next qui appelle Mastra ou le mock. |
-| `docker-compose.yml` | Services Mastra runtime + dashboard Next + Studio + gateway Nginx. |
+| Fichier                                  | Rôle                                                                 |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `src/mastra/index.ts`                    | Configuration Mastra : storage LibSQL, observability, agent, scorer. |
+| `src/mastra/agents/naive-agent.ts`       | Agent naïf AnSu + configuration `Memory`.                            |
+| `src/mastra/scorers/naivety-contract.ts` | Scorer Mastra custom.                                                |
+| `src/lib/ansu-contract.ts`               | Contrat métier partagé : prompt, mock, guardrails, score.            |
+| `app/page.tsx`                           | Dashboard Next.                                                      |
+| `app/api/agent/route.ts`                 | API Next qui appelle Mastra ou le mock.                              |
+| `docker-compose.yml`                     | Services Mastra runtime + dashboard Next + Studio + gateway Nginx.   |
 
 ## Premières conclusions à vérifier
 

@@ -2,7 +2,7 @@
 
 > Statut : document de partage et de prise de décision.  
 > Objet : comparer **MLflow**, **Phoenix** et **Langfuse** pour l’observability et les évaluations AnSu.  
-> Méthode : valider les critères **B1 à B10** un par un, avec captures ou éléments observés quand nécessaire, puis formuler une recommandation.
+> Méthode : valider les critères **B1 à B11** un par un, avec captures ou éléments observés quand nécessaire, puis formuler une recommandation.
 
 LangSmith et la plateforme associée à Mastra ne sont pas inclus dans ce comparatif principal. Ce sont pourtant les solutions les plus intégrées à leurs runtimes respectifs : LangSmith pour LangChain/LangGraph, et la plateforme Mastra pour Mastra. Elles restent donc utiles pour le debug et le développement.
 
@@ -83,7 +83,8 @@ Le score pédagogique `ansu_naivety` est calculé **après** le graphe métier. 
 | B7 | Prompt/versioning | Prompt registry, versions, tags, variables ? |
 | B8 | Portabilité | Export, API, séparation source de vérité AnSu vs outil ? |
 | B9 | DX | Câblage clair local/prod, Python, TypeScript, UI utile ? |
-| B10 | Prod readiness | Auth, RBAC, multi-projet, backup, performance, rétention ? |
+| B10 | Production technique | Peut-on exploiter l’outil techniquement en production ? |
+| B11 | Accès équipe / droits | Peut-on gérer facilement les accès des membres de l’équipe ? |
 
 ## 5. Validation question par question
 
@@ -331,56 +332,183 @@ Langfuse est clair et bien intégré, mais moins avancé que Phoenix sur ce poin
 
 ### B8 — Peut-on exporter les données et éviter le lock-in ?
 
-À valider.
+Réponse courte : oui, les trois plateformes proposent des APIs permettant de récupérer les données. Phoenix est le plus “standard” dans sa représentation des données, car il s’appuie fortement sur OpenTelemetry / OpenInference et expose des exports très orientés data. MLflow et Langfuse sont aussi exportables, mais avec des modèles de données plus propres à leur plateforme.
+
+Pour AnSu, le point clé est de ne pas faire de l’outil observability la source de vérité métier. Les traces doivent rester reliées à AnSu via des IDs stables : `sessionId`, `userId`, `agentVersion`, `promptVersion`, `runId`, etc.
+
+| Outil | Statut | Synthèse |
+|---|---|---|
+| MLflow | Validé | Très bon côté APIs Python et logique MLOps : `search_traces`, `search_runs`, `search_experiments`, prompt registry. Les données sont faciles à extraire pour une équipe technique, notamment en DataFrame / JSON. Le modèle reste toutefois spécifique à MLflow. |
+| Phoenix | Validé fort sur portabilité data | C’est le plus standard dans sa donnée : traces/spans OpenTelemetry, conventions OpenInference, API REST documentée, exports datasets en CSV / JSONL, formats OpenAI evals / fine-tuning, exports experiments en CSV / JSON. Moins agréable en UI, mais très bon pour éviter le lock-in data. |
+| Langfuse | Validé | API publique claire pour traces, scores, datasets et prompts. Très pratique pour un usage produit observability. Le modèle de données est plus spécifique à Langfuse, donc il faut éviter de faire dépendre AnSu directement de ses objets internes. |
+
+Éléments vérifiés :
+
+- Langfuse expose localement des endpoints publics pour les traces, scores, datasets et prompts ;
+- Phoenix expose une OpenAPI locale avec traces, spans, annotations, datasets, experiments, prompts et versions ;
+- Phoenix propose aussi des exports dataset en `csv`, `jsonl`, `openai_evals`, `openai_ft` ;
+- MLflow expose des APIs Python matures pour chercher et exporter traces, runs, experiments et prompts.
+
+Conclusion B8 :
+
+```txt
+Les trois plateformes permettent de récupérer les données.
+Phoenix est le plus standard et le plus portable côté format data.
+MLflow est très exportable pour une équipe technique, mais avec un modèle MLflow.
+Langfuse est très pratique via API, mais son modèle est plus produit / plateforme.
+Dans tous les cas, AnSu doit garder sa propre base métier comme source de vérité.
+```
 
 ### B9 — L’intégration est-elle simple à développer et maintenir ?
 
-À valider.
+Réponse courte : les trois intégrations sont faisables, mais elles ne demandent pas le même type d’effort. La question ici est de savoir ce qui sera le plus simple à brancher, comprendre, débugger et maintenir dans la durée.
 
-### B10 — L’outil est-il prêt pour un usage production ?
+| Outil | Statut | Synthèse |
+|---|---|---|
+| MLflow | Validé | Intégration LangGraph/LangChain assez directe. Peu d’infra à maintenir comparé à Langfuse. Bon choix pour les développeurs, mais moins immédiat pour une personne produit : il faut souvent ouvrir les détails techniques d’une trace pour comprendre ce qui s’est passé. |
+| Phoenix | Partiel | Base très standard grâce à OpenTelemetry / OpenInference, mais demande plus de réglages pour que les bonnes données ressortent clairement. Exemple : les tokens Albert ne remontent pas encore correctement dans l’interface. |
+| Langfuse | Validé avec réserve infra | SDK et API pratiques pour une app LLM : traces, metadata, scores et sorties structurées sont assez simples à pousser. En revanche, l’infra self-host est la plus lourde : Postgres, ClickHouse, Redis, MinIO, worker, web. |
 
-À valider.
+Lecture par type d’effort :
+
+```txt
+MLflow   : le plus simple à maintenir côté développeurs.
+Langfuse : le plus simple à intégrer côté application LLM, mais infra plus lourde.
+Phoenix  : le plus standard côté data, mais demande plus de mapping pour une intégration lisible.
+```
+
+Conclusion B9 :
+
+```txt
+Ce critère ne départage pas à lui seul le meilleur outil final.
+MLflow rassure côté maintenance développeurs, mais demande plus d’effort de lecture pour un profil produit.
+Langfuse rassure côté intégration applicative LLM, avec une réserve infra.
+Phoenix rassure côté standards, mais demande plus de travail de câblage fin.
+```
+
+### B10 — Peut-on exploiter l’outil techniquement en production ?
+
+Réponse courte : les trois outils sont exploitables, mais pas avec le même coût infra.
+
+| Outil | Statut | Synthèse |
+|---|---|---|
+| MLflow | Validé | Stack la plus simple : un serveur MLflow, un stockage à cadrer, et l’interface. C’est le plus léger à opérer techniquement. |
+| Phoenix | Validé avec cadrage production | Stack plutôt légère aussi. Le point d’attention principal est le bon câblage des données envoyées : traces, tokens, metadata, scores. |
+| Langfuse | Validé avec réserve infra forte | Stack la plus lourde : application web, worker, base relationnelle, base analytique, cache et stockage objet. Plus complet, mais plus coûteux à exploiter. |
+
+Conclusion B10 :
+
+```txt
+MLflow est le plus simple à opérer.
+Phoenix reste léger, mais demande un câblage data plus précis.
+Langfuse est le plus complet, mais aussi le plus lourd côté infra.
+```
+
+### B11 — Peut-on gérer facilement les accès des membres de l’équipe ?
+
+Réponse courte : oui, les trois plateformes permettent de gérer des accès utilisateurs et des droits. À ce stade, seul Langfuse a été testé réellement dans le POC, car la gestion des utilisateurs y est activée par défaut. Pour MLflow et Phoenix, la validation repose sur la documentation.
+
+| Outil | Statut | Synthèse |
+|---|---|---|
+| MLflow | Validé sur documentation | La documentation MLflow décrit une authentification avec utilisateurs, rôles et permissions. Ce n’est pas activé dans notre configuration locale actuelle : il faut lancer MLflow avec l’application `basic-auth` et installer les dépendances nécessaires. |
+| Phoenix | Validé sur documentation | Phoenix documente une gestion des accès et des droits. Le POC local n’a pas été configuré pour tester finement ces droits. À valider dans la configuration cible si Phoenix est retenu. |
+| Langfuse | Validé en POC | La gestion des utilisateurs est disponible directement dans l’interface testée. Langfuse permet de gérer les membres et les droits de manière plus immédiate dans notre installation locale. |
+
+Point à investiguer plus tard : si AnSu a besoin d’un SSO, notamment Keycloak / OIDC, il faudra vérifier précisément la solution choisie. Les fonctionnalités SSO ou RBAC avancées peuvent dépendre du mode de déploiement ou d’une édition payante selon l’outil.
+
+Conclusion B11 :
+
+```txt
+Les trois plateformes semblent capables de gérer des accès équipe.
+Langfuse est le seul validé concrètement dans le POC local.
+MLflow et Phoenix sont validés sur documentation, mais restent à tester dans une configuration reproductible.
+Le SSO / Keycloak devra être étudié séparément une fois l’outil choisi.
+```
 
 ## 6. Comparatif final
 
-À remplir après validation de B1 à B10.
+Cette synthèse ne reprend pas tout le détail des questions B1 à B11. Elle sert à faire ressortir la lecture décisionnelle.
 
-| Outil | Forces principales | Limites principales | Positionnement probable |
+| Outil | Ce qu’il fait le mieux | Ce qui coûte / limite | Lecture finale |
 |---|---|---|---|
-| MLflow | À compléter | À compléter | À compléter |
-| Phoenix | À compléter | À compléter | À compléter |
-| Langfuse | À compléter | À compléter | À compléter |
+| Langfuse | Lecture quotidienne des traces agentiques, scores bien visibles, sorties structurées lisibles, expérience confortable pour l’équipe. | Infra la plus lourde à opérer. SSO / droits avancés à vérifier si besoin. | Favori pour l’observability agentique produit du POC. |
+| MLflow | Simplicité infra, analyses automatisées par les développeurs, évaluations, non-régression, exports. | Moins immédiat pour une lecture produit. Les scores et sorties structurées demandent plus d’effort de lecture. | Candidat solide pour evals / non-régression / infra simple. |
+| Phoenix | Données standards, exports, portabilité, très bon gestionnaire de prompts. | Traces agentiques moins lisibles, graphe LangGraph peu restitué visuellement, câblage tokens/metadata à affiner. | Très bon socle data, moins convaincant comme outil de lecture quotidienne des traces. |
+
+Classement par usage :
+
+| Usage prioritaire | 1er choix | 2e choix | 3e choix |
+|---|---|---|---|
+| Lire rapidement ce qu’a fait l’agent | Langfuse | MLflow | Phoenix |
+| Exploiter / exporter les données | Phoenix | MLflow | Langfuse |
+| Limiter l’effort infra | MLflow | Phoenix | Langfuse |
+| Gérer les prompts et leurs versions | Phoenix | Langfuse | MLflow |
+| Lancer des evals et jeux de non-régression | Langfuse / MLflow | Phoenix | — |
+
+Lecture synthétique :
+
+```txt
+Langfuse gagne sur l’usage quotidien et la lisibilité agentique.
+MLflow gagne sur la simplicité infra et les analyses automatisées par les développeurs.
+Phoenix gagne sur la portabilité data et la gestion des prompts.
+```
 
 ## 7. Recommandation
 
-À remplir après validation de B1 à B10.
+Recommandation provisoire : retenir **Langfuse** comme candidat principal pour l’observability agentique du POC octobre.
 
-La recommandation devra distinguer au minimum :
+Pourquoi : pour un POC, le besoin principal est de comprendre vite ce que fait l’agent, relire une trace, voir les scores, relire une sortie structurée et partager ces constats dans l’équipe. Sur ce point, Langfuse est le plus confortable.
 
-- meilleur choix pour observability produit ;
-- meilleur choix pour evals / recherche / non-régression ;
-- coût d’exploitation ;
-- risques juridiques ou infra ;
-- points à reporter.
+Cette recommandation garde deux nuances :
 
-## 8. Points ouverts
+- **MLflow** reste une très bonne option si la priorité devient l’évaluation technique, la non-régression et une infra plus simple ;
+- **Phoenix** reste intéressant comme référence data / prompts, mais il n’est pas recommandé comme solution principale pour le POC. Son interface est beaucoup moins lisible sur les traces agentiques. Il ne redeviendrait candidat sérieux que si la gestion avancée de prompts devenait le cœur du besoin.
 
-Points à ne pas oublier, mais qui ne doivent pas bloquer la validation question par question :
+Conditions à vérifier avant décision finale :
 
-- compatibilité LangGraph TypeScript à requalifier plus tard ;
-- compatibilité Mastra observability à traiter séparément ;
-- niveau exact d’annotation native Phoenix pour les scores ;
-- niveau exact d’assessment natif MLflow après séparation du score hors graphe ;
-- stratégie RGPD : anonymisation, rétention, accès aux traces ;
-- stratégie production : sauvegardes, monitoring, upgrades, coûts infra.
+- complexité de mise en œuvre de Langfuse sur l’infra Scaleway : déploiement, maintenance, sauvegarde et restauration de la stack ;
+- gestion des accès équipe et éventuel besoin SSO / Keycloak ;
+- câblage explicite des coûts et impacts Albert en metadata custom ;
+- capacité à garder AnSu comme source de vérité métier, sans dépendre des objets internes Langfuse.
+
+Conclusion de décision :
+
+```txt
+Choix recommandé pour le POC, sous réserve de faisabilité technique : Langfuse.
+Option forte si priorité evals / infra simple : MLflow.
+Option à garder seulement si priorité data standard / gestion avancée des prompts : Phoenix.
+```
+
+## 8. Points à vérifier avant mise en œuvre
+
+La recommandation pointe vers Langfuse, mais elle reste conditionnée à quelques vérifications concrètes.
+
+1. **Faisabilité infra Langfuse sur Scaleway**  
+   Vérifier le déploiement, la maintenance, les sauvegardes et la restauration de la stack Langfuse.
+
+2. **Accès équipe et SSO éventuel**  
+   La gestion des membres fonctionne dans Langfuse. Si AnSu a besoin de Keycloak / OIDC / SSO, il faudra vérifier précisément ce qui est disponible dans le mode de déploiement retenu.
+
+3. **Données sensibles et rétention**  
+   Définir ce qui peut être envoyé dans les traces, ce qui doit être anonymisé, combien de temps les traces sont conservées et qui peut les consulter.
+
+4. **Coûts et impacts Albert**  
+   Les tokens remontent correctement dans Langfuse et MLflow. Les champs `cost` et `impacts` doivent être câblés explicitement comme metadata custom pour être lisibles. Ce n’est pas crucial pour le POC, mais c’est un bon cas d’école : si l’outil sait intégrer proprement ces métadonnées personnalisées, il sera plus facile d’ajouter d’autres métadonnées métier AnSu ensuite.
+
+5. **Runtime final**  
+   Le test a été fait avec LangGraph Python, volontairement choisi comme runtime complexe. Si le POC part finalement sur Mastra, LangGraph TypeScript ou un autre runtime, il faudra simplement rejouer la validation d’intégration avec le runtime retenu. Le repo contient déjà le playground et les scénarios nécessaires pour refaire ce test rapidement.
+
+6. **Plan B**  
+   Si Langfuse se révèle trop lourd à déployer ou maintenir, MLflow reste l’alternative la plus crédible. Phoenix reste à garder seulement si la priorité devient la gestion avancée de prompts ou la portabilité data.
 
 ## 9. Annexes utiles
 
-- Grille complète : [`GRILLE_EVALUATION.md`](./GRILLE_EVALUATION.md)
-- Questions structurantes : [`QUESTIONS_STRUCTURANTES.md`](./QUESTIONS_STRUCTURANTES.md)
-- Traces attendues : [`TRACES_PRIORITAIRES.md`](./TRACES_PRIORITAIRES.md)
-- Synthèse runtime : [`SYNTHESE_RUNTIME.md`](./SYNTHESE_RUNTIME.md)
-- Fiches détaillées :
-  - [`fiches/observability/mlflow.md`](./fiches/observability/mlflow.md)
-  - [`fiches/observability/langfuse.md`](./fiches/observability/langfuse.md)
-  - `fiches/observability/phoenix.md` à créer
+### Méthode de benchmark
+
+- [`GRILLE_EVALUATION.md`](./GRILLE_EVALUATION.md) — grille complète utilisée pour cadrer les critères.
+- [`QUESTIONS_STRUCTURANTES.md`](./QUESTIONS_STRUCTURANTES.md) — questions de décision par catégorie.
+- [`TRACES_PRIORITAIRES.md`](./TRACES_PRIORITAIRES.md) — informations attendues dans les traces AnSu.
+
+### Comparaison liée
+
+- [`SYNTHESE_RUNTIME.md`](./SYNTHESE_RUNTIME.md) — synthèse séparée sur les runtimes agentiques. À ne pas mélanger avec la décision observability / evals.

@@ -25,15 +25,15 @@ GRAFANA_OTEL_ENDPOINT = os.getenv("GRAFANA_OTEL_ENDPOINT")
 KNOWLEDGE_BASE = [
     {
         "id": "ansu-poc-001",
-        "title": "Besoin POC AnSu v2",
+        "title": "Besoin POC AnSu v5",
         "text": (
-            "Le POC AnSu v2 vise un seul agent avec modération input/output, "
+            "Le POC AnSu v5 vise un seul agent avec modération input/output, "
             "observabilité OpenTelemetry et premières évaluations."
         ),
     },
     {
         "id": "ansu-prod-001",
-        "title": "Besoins futurs AnSu v2",
+        "title": "Besoins futurs AnSu v5",
         "text": (
             "Les besoins futurs incluent versioning agent, multi-agents, evals avancées "
             "et retours d'évaluation saisis par les professeurs."
@@ -135,7 +135,7 @@ def build_model():
 
     return FakeListChatModel(
         responses=[
-            "Le POC AnSu v2 doit d'abord valider un agent unique avec modération en entrée/sortie, "
+            "Le POC AnSu v5 doit d'abord valider un agent unique avec modération en entrée/sortie, "
             "observabilité OpenTelemetry et premières évaluations. [source:ansu-poc-001]"
         ]
     )
@@ -220,6 +220,6 @@ if __name__ == "__main__":
     setup_tracing()
     question = os.getenv(
         "DEMO_QUESTION",
-        "Quel est le besoin prioritaire du POC agentique AnSu v2 ?",
+        "Quel est le besoin prioritaire du POC agentique AnSu v5 ?",
     )
     print(json.dumps(run(question), ensure_ascii=False, indent=2))

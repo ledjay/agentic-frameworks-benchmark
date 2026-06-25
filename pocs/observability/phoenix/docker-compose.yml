@@ -15,7 +15,13 @@ services:
     volumes:
       - phoenix-data:/data
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:6006/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:6006/health')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -29,7 +35,7 @@ services:
     environment:
       PHOENIX_PROJECT_NAME: ansu-phoenix-langchain-demo
       PHOENIX_OTEL_ENDPOINT: http://phoenix:6006/v1/traces
-      DEMO_QUESTION: Quel est le besoin prioritaire du POC agentique AnSu v2 ?
+      DEMO_QUESTION: Quel est le besoin prioritaire du POC agentique AnSu v5 ?
       # Optional real providers:
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
       MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}

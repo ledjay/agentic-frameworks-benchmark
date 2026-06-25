@@ -1,15 +1,18 @@
-import type { Metadata } from 'next'
-import './styles.css'
+import type { Metadata } from "next";
+import "./styles.css";
 
 export const metadata: Metadata = {
-  title: 'AnSu Mastra POC',
-  description: 'POC Mastra runtime + Next dashboard + Studio/evals/observability pour AnSu v2'
-}
+  title: "AnSu Mastra POC",
+  description:
+    "POC Mastra runtime + Next dashboard + Studio/evals/observability pour AnSu v5",
+};
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr">
       <body>{children}</body>
     </html>
-  )
+  );
 }

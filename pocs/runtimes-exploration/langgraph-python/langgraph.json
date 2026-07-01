@@ -1,0 +1,13 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "a2_naive_agent": "./src/a2_naive_agent.py:agent",
+    "a3_tool_agent": "./src/a3_tool_agent.py:agent",
+    "a4_memory_agent": "./src/a4_memory_agent.py:agent",
+    "a5_router_agent": "./src/a5_router_agent.py:agent",
+    "a7_guardrail_agent": "./src/a7_guardrail_agent.py:agent"
+  },
+  "env": "./.env"
+}

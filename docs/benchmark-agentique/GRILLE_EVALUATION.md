@@ -141,23 +141,39 @@ Un scénario ne doit pas être retenu si :
 
 ## 6. Questions A — runtimes agentiques v2
 
+La comparaison runtime active porte principalement sur **Mastra** et **LangGraph**.
+
+- **Vercel AI SDK** sert de baseline TypeScript explicite : utile pour comprendre la plomberie, pas candidat principal à ce stade.
+- **LangChain** est traité comme écosystème/brique, notamment derrière LangGraph, pas comme candidat runtime autonome dans la décision finale.
+
+Question centrale :
+
+> Quel moteur permet de construire vite, de comprendre les erreurs, et de maintenir le produit dans 6 mois ?
+
 | ID | Critère | Question | Preuve attendue |
 |---|---|---|---|
-| A1* | Agent naïf | Le runtime exécute-t-il le même agent naïf canonique ? | Réponse via playground sur scénario standard |
-| A2* | Pipeline | Supporte-t-il `moderate_input → retrieve_context → generate_answer → score_naivety` ? | `output.raw.graph` ou équivalent |
-| A3* | Mémoire | La session est-elle isolée par `sessionId` / `userId` ? | Test 2 sessions / 2 users |
-| A4* | Façade | Le produit peut-il rester derrière `TurnRequest/TurnResponse` ? | Front ne dépend pas d’objets runtime |
-| A5* | LLM gateway/model | Le runtime reçoit-il et reflète-t-il le combo LLM demandé ? | `provider/model` + `requestedModel` si différent |
-| A6* | Metadata | Trace/réponse contiennent-elles session, user, versions, runtime, provider/model ? | Playground + observability |
-| A7* | Scorer | Peut-on brancher `ansu_naivety` ? | Score dans réponse + trace |
-| A8* | Tool | Peut-on appeler/tracer `searchKnowledge` ? | tool call/result dans raw/trace |
-| A9* | Structured output | Peut-on produire un JSON métier validé ? | `NotionAssessment` ou équivalent |
-| A10 | Streaming | Streaming possible sans perdre contrôle/traces ? | Test UI + trace complète |
-| A11 | Guardrails | Peut-on bloquer/réparer avant ou après LLM ? | moderation + guardrail output |
-| A12* | DX | Câblage clair, maintenable, documenté ? | notes d’implémentation + build |
-| A13* | Local/prod | Docker/local reproductible ? | task + healthcheck |
-| A14* | Portabilité | Peut-on remplacer ce runtime sans réécrire le métier ? | contrat + isolation adapter |
-| A15 | Lifecycle prompt/agent | Le runtime aide-t-il à gérer versions/drafts d’agents/prompts ? | runtime-specific, non bloquant si observability le couvre |
+| A0* | API runtime | Le runtime expose-t-il des routes API utilisables out-of-the-box ? | Documentation routes / OpenAPI / client SDK |
+| A1* | API AnSu unique | Peut-on placer le runtime derrière une API AnSu unique (Hono/Fastify/autre) qui route vers l’API du runtime sans exposer ses routes au produit ? | Route AnSu stable + appel/proxy vers API runtime + réponse normalisée |
+| A2* | Bootstrap | Peut-on créer vite un agent naïf traçable ? | Code agent + trace exploitable |
+| A3* | Tools | `searchKnowledge` est-il typé, appelé et tracé ? | Code tool + input/output visibles dans trace |
+| A4* | Mémoire | La session multi-tour est-elle isolée par `sessionId` / `userId` ? | Test même session / autre session / autre user |
+| A5* | Non-linéarité | Routing, check et repair restent-ils lisibles quand le flux se complexifie ? | Code workflow/graph + trace du chemin exécuté |
+| A6* | Debug | Quand l’agent déraille, peut-on comprendre où, pourquoi, avec quelles données et quelle version ? | Trace avec étapes, erreurs, metadata versions |
+| A7* | Scoring / guardrails | Peut-on valider, scorer, bloquer ou réparer une réponse ? | Score naïveté + décision repair visible |
+| A8* | Versions | Agent, prompt et modèle sont-ils traçables par version ? | `agentVersion`, `promptVersion`, modèle, provider dans Langfuse |
+| A9* | DX / testabilité | Le code est-il maintenable et testable par l’équipe ? | Notes d’implémentation, build, quantité de plomberie |
+| A10* | Prod / sécurité | Self-host, logs, secrets et données sensibles sont-ils maîtrisables ? | Config, filtres, stockage, risques identifiés |
+| A11 | Streaming | Streaming utile sans perdre contrôle ni traces ? | Test UI + trace complète si temps |
+| A12 | Fit pédagogique | Le runtime aide-t-il à représenter une intention pédagogique ? | Scénario AnSu concret : aide naïve, indice, repair |
+
+Les questions marquées `*` sont prioritaires pour la décision mercredi.
+
+Les sujets suivants restent importants mais ne doivent pas alourdir la comparaison runtime :
+
+- prompt management détaillé → catégorie B / Langfuse ;
+- coût, tokens et impacts Albert → catégorie C + metadata runtime ;
+- RAG documentaire complet → catégorie D ;
+- RBAC, rétention et export des traces → catégorie B / infra.
 
 ## 7. Questions B — observability / evals / prompt management v2
 

@@ -4,7 +4,58 @@
 > Objet : comparer **Mastra** et **LangGraph** comme moteurs possibles pour la version agentique testable d’AnSu.  
 > Méthode : réponses validées uniquement après test local par Jérémie et capture/snippet quand utile.
 
-## Synthèse courte — à lire en premier
+## Workflow ou graphe : quel modèle mental pour un agent pédagogique ?
+
+Avant de comparer les outils, il faut distinguer deux façons de modéliser un agent pédagogique.
+
+Un **workflow** décrit un processus connu à l’avance : on enchaîne des étapes, avec quelques branches si nécessaire.
+
+```mermaid
+flowchart TD
+  U[Demande élève] --> C[Classer la demande]
+  C --> R[Récupérer le contexte utile]
+  R --> G[Générer une réponse guidée]
+  G --> V[Vérifier / scorer]
+  V --> O[Réponse au front]
+
+  C -->|hors sujet| H[Recentrer]
+  H --> O
+```
+
+Un **graphe d’état** devient utile quand l’agent doit piloter une interaction adaptative : il observe l’état de l’élève, choisit une stratégie, réévalue, peut boucler, revenir sur un prérequis ou escalader à l’enseignant.
+
+```mermaid
+flowchart TD
+  D[Diagnostiquer l'état de l'élève] --> S{Choisir une stratégie}
+
+  S -->|bloqué| I[Indice gradué]
+  S -->|erreur conceptuelle| M[Remédiation]
+  S -->|besoin de modèle| E[Exemple travaillé]
+  S -->|blocage long| P[Escalade enseignant]
+
+  I --> A[Analyser la réponse suivante]
+  M --> A
+  E --> A
+  P --> A
+
+  A -->|acquis validé| N[Objectif suivant]
+  A -->|encore fragile| S
+  A -->|prérequis manquant| B[Revenir sur un prérequis]
+  B --> S
+```
+
+La différence n’est donc pas “workflow simple” contre “graphe puissant”. La vraie question est :
+
+| Si l’agent ressemble surtout à…                                                   | Modèle le plus naturel |
+| --------------------------------------------------------------------------------- | ---------------------- |
+| une chaîne de traitement pédagogique connue                                       | Workflow               |
+| un tuteur adaptatif qui boucle selon l’état de l’élève                            | Graphe d’état          |
+| un agent RAG qui répond avec contexte et garde-fous                               | Workflow               |
+| un moteur de remédiation avec diagnostic, retours arrière et stratégies multiples | Graphe d’état          |
+
+Pour la version testable d’octobre, le besoin immédiat ressemble davantage à un **workflow typé** : un agent unique, quelques routes, des tools, de la mémoire et des garde-fous. Le graphe devient un vrai avantage seulement si AnSu construit ensuite un moteur tutoriel plus adaptatif : suivi d’acquis, remédiation, indices gradués, retours vers les prérequis et escalade enseignant.
+
+## Synthèse courte
 
 ### Décision recommandée
 
@@ -70,57 +121,6 @@ Option long terme : LangGraph si la logique pédagogique devient une vraie machi
 ```
 
 Le point clé est de ne pas enfermer AnSu dans le runtime choisi : conversations, messages, droits, acquis, prompts, versions et traces importantes doivent rester maîtrisés par AnSu, Langfuse et Git.
-
-## Workflow ou graphe : quel modèle mental pour un agent pédagogique ?
-
-Avant de comparer les outils, il faut distinguer deux façons de modéliser un agent pédagogique.
-
-Un **workflow** décrit un processus connu à l’avance : on enchaîne des étapes, avec quelques branches si nécessaire.
-
-```mermaid
-flowchart TD
-  U[Demande élève] --> C[Classer la demande]
-  C --> R[Récupérer le contexte utile]
-  R --> G[Générer une réponse guidée]
-  G --> V[Vérifier / scorer]
-  V --> O[Réponse au front]
-
-  C -->|hors sujet| H[Recentrer]
-  H --> O
-```
-
-Un **graphe d’état** devient utile quand l’agent doit piloter une interaction adaptative : il observe l’état de l’élève, choisit une stratégie, réévalue, peut boucler, revenir sur un prérequis ou escalader à l’enseignant.
-
-```mermaid
-flowchart TD
-  D[Diagnostiquer l'état de l'élève] --> S{Choisir une stratégie}
-
-  S -->|bloqué| I[Indice gradué]
-  S -->|erreur conceptuelle| M[Remédiation]
-  S -->|besoin de modèle| E[Exemple travaillé]
-  S -->|blocage long| P[Escalade enseignant]
-
-  I --> A[Analyser la réponse suivante]
-  M --> A
-  E --> A
-  P --> A
-
-  A -->|acquis validé| N[Objectif suivant]
-  A -->|encore fragile| S
-  A -->|prérequis manquant| B[Revenir sur un prérequis]
-  B --> S
-```
-
-La différence n’est donc pas “workflow simple” contre “graphe puissant”. La vraie question est :
-
-| Si l’agent ressemble surtout à…                                                   | Modèle le plus naturel |
-| --------------------------------------------------------------------------------- | ---------------------- |
-| une chaîne de traitement pédagogique connue                                       | Workflow               |
-| un tuteur adaptatif qui boucle selon l’état de l’élève                            | Graphe d’état          |
-| un agent RAG qui répond avec contexte et garde-fous                               | Workflow               |
-| un moteur de remédiation avec diagnostic, retours arrière et stratégies multiples | Graphe d’état          |
-
-Pour la version testable d’octobre, le besoin immédiat ressemble davantage à un **workflow typé** : un agent unique, quelques routes, des tools, de la mémoire et des garde-fous. Le graphe devient un vrai avantage seulement si AnSu construit ensuite un moteur tutoriel plus adaptatif : suivi d’acquis, remédiation, indices gradués, retours vers les prérequis et escalade enseignant.
 
 ## 1. Décision à prendre
 
